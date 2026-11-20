@@ -1,0 +1,9 @@
+[project]
+name = "neural-qec-decoder"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["stim", "pymatching", "sinter", "torch", "numpy", "matplotlib", "pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: long-running statistical tests"]
