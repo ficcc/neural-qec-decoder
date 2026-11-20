@@ -1,6 +1,9 @@
 """Helpers shared by the evaluation scripts: sharding over points and merging shard outputs."""
 import json
+import os
 from pathlib import Path
+
+import torch
 
 from experiments.jobs import ckpt_dir
 from src.train import load_gnn
@@ -25,6 +28,12 @@ def load_rows(tag: str, root: Path = Path("results")) -> list[dict]:
     return rows
 
 
+def eval_device() -> str:
+    """GNN inference device for evaluation: $NQD_EVAL_DEVICE, else CUDA when available."""
+    return os.environ.get("NQD_EVAL_DEVICE") or ("cuda" if torch.cuda.is_available() else "cpu")
+
+
 def gnn(name: str):
-    """(model, cfg) for a trained job; raises if the checkpoint is missing."""
-    return load_gnn(ckpt_dir(name) / "best.pt")
+    """(model, cfg) for a trained job, on the evaluation device; raises if the checkpoint is missing."""
+    model, cfg = load_gnn(ckpt_dir(name) / "best.pt")
+    return model.to(eval_device()), cfg

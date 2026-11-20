@@ -41,11 +41,14 @@ def count_errors_matching(m: pymatching.Matching, dets: np.ndarray, obs: np.ndar
 def count_errors_gnn(model, dets: np.ndarray, obs: np.ndarray, table: np.ndarray, d: int,
                      rounds: int, k: int, batch: int = 4096) -> int:
     model.eval()
+    device = next(model.parameters()).device
+    if device.type == "cuda":
+        batch = min(batch, 2048)   # many eval processes share one GPU
     errs = 0
     with torch.no_grad():
         for s in range(0, len(obs), batch):
-            g = build_graph_batch(dets[s:s + batch], table, d=d, rounds=rounds, k=k)
-            pred = (model(g) > 0).numpy()
+            g = build_graph_batch(dets[s:s + batch], table, d=d, rounds=rounds, k=k).to(device)
+            pred = (model(g) > 0).cpu().numpy()
             errs += int((pred != obs[s:s + batch]).sum())
     return errs
 
