@@ -97,3 +97,41 @@ def test_resonator_idle_during_measurement():
     for k in zero_idle.p_res_idle: zero_idle.p_res_idle[k] = 0.0
     assert not noisy.detector_error_model().approx_equals(
         apply_noise(c, zero_idle).detector_error_model(), atol=1e-6)
+
+
+def test_crosstalk_pairs_are_neighbouring_data_qubits():
+    from src.noise import crosstalk_pairs, si1000_model
+    for d in (3, 5):
+        c = noiseless_circuit(d, d)
+        pairs = crosstalk_pairs(c)
+        assert len(pairs) == 2 * d * (d - 1)
+        data = set(si1000_model(c, 0.001).p_data)
+        coords = c.get_final_qubit_coordinates()
+        for a, b in pairs:
+            assert a in data and b in data
+            dx, dy = abs(coords[a][0] - coords[b][0]), abs(coords[a][1] - coords[b][1])
+            assert sorted((dx, dy)) == [0, 2]
+
+
+def test_crosstalk_emitted_only_between_different_gates_in_a_layer():
+    from dataclasses import replace
+    from src.noise import crosstalk_pairs, si1000_model
+    c = noiseless_circuit(3, 3)
+    base = si1000_model(c, 0.002)
+    assert "CORRELATED_ERROR" not in str(apply_noise(c, base))
+    m = replace(base, p_xt={pr: 0.002 for pr in crosstalk_pairs(c)})
+    noisy = apply_noise(c, m)
+    flat = list(noisy.flattened())
+    n_xt = 0
+    for i, op in enumerate(flat):
+        if op.name == "E":
+            n_xt += 1
+            a, b = (t.value for t in op.targets_copy())
+            # nearest preceding CX layer contains both qubits, in different gates
+            j = max(k for k in range(i) if flat[k].name == "CX")
+            q = [t.value for t in flat[j].targets_copy()]
+            gates = [set(q[k:k + 2]) for k in range(0, len(q), 2)]
+            ga = next(g for g in gates if a in g); gb = next(g for g in gates if b in g)
+            assert ga != gb
+    assert n_xt > 0 and n_xt % 2 == 0
+    assert not noisy.detector_error_model().approx_equals(apply_noise(c, base).detector_error_model(), atol=1e-6)

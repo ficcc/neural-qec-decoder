@@ -6,7 +6,9 @@ from pathlib import Path
 import numpy as np
 import stim
 
-from src.noise import NoiseModel, si1000_model
+from dataclasses import replace
+
+from src.noise import NoiseModel, crosstalk_pairs, si1000_model
 
 P_CAP = 0.25
 FIELDS = ("p_1q", "p_2q", "p_reset", "p_meas", "p_data", "p_idle", "p_res_idle")
@@ -19,6 +21,7 @@ class ScenarioConfig:
     n_bad: int        # number of bad CX couplers
     bad_mult: float   # rate multiplier on bad couplers
     delta: float      # log-normal drift between calibration (t0) and test (t1)
+    xt: float = 0.0   # crosstalk rate as a multiple of p (S4)
 
 
 def load_scenarios(path: str | Path = "configs/scenarios.json") -> dict[str, ScenarioConfig]:
@@ -61,4 +64,8 @@ def device_instance(circuit: stim.Circuit, p: float, cfg: ScenarioConfig,
         t1 = _finish({f: t0[f] * np.exp(cfg.delta * z1[f]) for f in FIELDS}, target)
     else:
         t1 = t0
-    return _to_model(template, t0), _to_model(template, t1)
+    m0, m1 = _to_model(template, t0), _to_model(template, t1)
+    if cfg.xt > 0:
+        xt = {pr: cfg.xt * p for pr in crosstalk_pairs(circuit)}
+        m0, m1 = replace(m0, p_xt=xt), replace(m1, p_xt=dict(xt))
+    return m0, m1

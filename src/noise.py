@@ -22,6 +22,7 @@ class NoiseModel:
     p_data: dict[int, float]              # DEPOLARIZE1 on data qubits at round start
     p_idle: dict[int, float] = field(default_factory=dict)      # idle in a gate moment
     p_res_idle: dict[int, float] = field(default_factory=dict)  # idle in a measure/reset moment
+    p_xt: dict[tuple[int, int], float] = field(default_factory=dict)  # XX and ZZ crosstalk, data pairs
 
 
 def _iter_ops(circuit: stim.Circuit):
@@ -45,6 +46,20 @@ def cx_pairs(circuit: stim.Circuit) -> list[tuple[int, int]]:
             for a, b in zip(q[::2], q[1::2]):
                 seen[tuple(sorted((a, b)))] = None
     return list(seen)
+
+
+def crosstalk_pairs(circuit: stim.Circuit) -> list[tuple[int, int]]:
+    """Sorted pairs of neighbouring data qubits (lattice distance 2, axis-aligned)."""
+    data = sorted({t.value for op in _iter_ops(circuit) if op.name in ("M", "MZ")
+                   for t in op.targets_copy()})
+    xy = circuit.get_final_qubit_coordinates()
+    out = []
+    for i, a in enumerate(data):
+        for b in data[i + 1:]:
+            dx, dy = abs(xy[a][0] - xy[b][0]), abs(xy[a][1] - xy[b][1])
+            if sorted((dx, dy)) == [0, 2]:
+                out.append((a, b))
+    return out
 
 
 def uniform_model(circuit: stim.Circuit, p: float) -> NoiseModel:
@@ -150,6 +165,12 @@ def apply_noise(circuit: stim.Circuit, model: NoiseModel) -> stim.Circuit:
                 out += _grouped("DEPOLARIZE1", q, model.p_1q.__getitem__)
             elif name == "CX":
                 out += _grouped_pairs(q, model.p_2q)
+                if model.p_xt:
+                    gate_of = {t: k // 2 for k, t in enumerate(q)}
+                    for (a, b), rate in model.p_xt.items():
+                        if rate > 0 and a in gate_of and b in gate_of and gate_of[a] != gate_of[b]:
+                            out.append("CORRELATED_ERROR", [stim.target_x(a), stim.target_x(b)], rate)
+                            out.append("CORRELATED_ERROR", [stim.target_z(a), stim.target_z(b)], rate)
             if name not in NOISE_FREE:
                 state["last_gate"] = name
         return out

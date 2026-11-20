@@ -65,3 +65,12 @@ def test_different_seeds_differ():
     a, _ = device_instance(C, 0.004, SC["S1"], seed=1)
     b, _ = device_instance(C, 0.004, SC["S1"], seed=2)
     assert a != b
+
+
+def test_s4_has_uniform_crosstalk_only():
+    t0, t1 = device_instance(C, 0.003, SC["S4"], seed=1)
+    ref = si1000_model(C, 0.003)
+    assert t0 == t1
+    for f in FIELDS:
+        assert np.allclose(_vals(t0, f), _vals(ref, f))
+    assert len(t0.p_xt) == 2 * 5 * 4 and all(v == pytest.approx(0.003) for v in t0.p_xt.values())
