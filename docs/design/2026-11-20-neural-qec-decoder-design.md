@@ -187,7 +187,7 @@ neural-qec-decoder/
 
 **Setup:**
 - GNN: one per d ∈ {3, 5, 7} (seed 0), plus seeds 1 and 2 at d = 5.
-- Test p ∈ {0.002, 0.004}. Training grid = E2's.
+- Test p and training grid: see the S4 values in the Noise paragraph above.
 
 ### 10.2 E7 — adapting to drift with few shots
 

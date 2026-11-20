@@ -8,8 +8,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-STYLES = {"naive": ":", "oracle": "-", "calibrated": "--", "correlated": "-.", "gnn": "-"}
-MARKERS = {"naive": "x", "oracle": "o", "calibrated": "s", "correlated": "^", "gnn": "D"}
+STYLES = {"naive": ":", "oracle": "--", "calibrated": "--", "correlated": "-.", "oracle_corr": "-.", "gnn": "-"}
+MARKERS = {"naive": "x", "oracle": "o", "calibrated": "s", "correlated": "^", "oracle_corr": "v", "gnn": "D"}
 
 
 def base_name(decoder: str) -> str:
@@ -36,10 +36,13 @@ def aggregate(rows: list[dict], key=("d", "p"), metric: str = "ler_round") -> di
     return out
 
 
-def plot_ler_vs_p(rows: list[dict], out: Path, per_round: bool = True, title: str = "") -> None:
+def plot_ler_vs_p(rows: list[dict], out: Path, per_round: bool = True, title: str = "",
+                  only: tuple[str, ...] | None = None) -> list[str]:
+    """Log-log LER vs p. `only` restricts to those base decoder names. Returns the plotted labels."""
     metric = "ler_round" if per_round else "ler"
     agg = aggregate(rows, metric=metric)
-    ds = sorted({k[1] for k in agg}); decs = sorted({k[0] for k in agg})
+    ds = sorted({k[1] for k in agg}); decs = sorted({k[0] for k in agg if only is None or k[0] in only})
+    labels = []
     colors = plt.cm.viridis(np.linspace(0, 0.85, len(ds)))
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     for c, d in zip(colors, ds):
@@ -50,6 +53,7 @@ def plot_ler_vs_p(rows: list[dict], out: Path, per_round: bool = True, title: st
             ps = [p for p, _ in pts]; m = [v[0] for _, v in pts]; e = [v[1] for _, v in pts]
             ax.errorbar(ps, m, yerr=e, color=c, ls=STYLES.get(dec, "-"), marker=MARKERS.get(dec, "."),
                         ms=4, capsize=2, label=f"{dec} d={d}")
+            labels.append(f"{dec} d={d}")
     ax.set_xscale("log"); ax.set_yscale("log")
     ax.set_xlabel("physical error rate p")
     ax.set_ylabel("logical error rate per round" if per_round else "logical error rate per shot")
@@ -57,3 +61,4 @@ def plot_ler_vs_p(rows: list[dict], out: Path, per_round: bool = True, title: st
     ax.legend(fontsize=6, ncol=2)
     Path(out).parent.mkdir(parents=True, exist_ok=True)
     fig.tight_layout(); fig.savefig(out, dpi=150); plt.close(fig)
+    return labels
