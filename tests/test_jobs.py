@@ -58,3 +58,11 @@ def test_timing_override_never_writes_real_checkpoints(tmp_path, monkeypatch):
     train_jobs.main(["--only", "e1/d3_s0", "--max-d", "3", "--steps", "7", "--device", "cpu"])
     assert seen and seen[0][0] == 7
     assert seen[0][1].relative_to(tmp_path).parts[0] == "_timing"
+
+
+def test_shards_partition_jobs():
+    from experiments.train_jobs import shard
+    jobs = all_jobs()
+    parts = [shard(jobs, i, 3) for i in range(3)]
+    names = [n for p in parts for n, _ in p]
+    assert sorted(names) == sorted(n for n, _ in jobs) and len(names) == len(set(names))

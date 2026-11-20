@@ -18,8 +18,12 @@ case "${1:-status}" in
     python -m experiments.train_jobs --only e1/d7_s0 --min-d 7 --device cuda --steps 100
     python -c "import json;l=json.load(open('checkpoints/_timing/e1/d7_s0/log.json'));print('d=7 s/step:', round(l['wall_time']/100,3))" ;;
   train)
-    nohup python -m experiments.train_jobs --min-d 5 --device cuda > train.out 2>&1 &
-    echo "started; tail -f train.out" ;;
+    N=${WORKERS:-3}   # several small-model workers keep one GPU busy
+    for i in $(seq 0 $((N-1))); do
+      OMP_NUM_THREADS=8 nohup python -m experiments.train_jobs --min-d 5 --device cuda --shard $i/$N > train_$i.out 2>&1 &
+    done
+    echo "started $N workers; tail -f train_*.out" ;;
   status)
-    python -m experiments.train_jobs --min-d 5 --list | head -1; tail -3 checkpoints/progress.log 2>/dev/null || true ;;
+    python -m experiments.train_jobs --min-d 5 --list | head -1; cat checkpoints/progress_*.log 2>/dev/null | wc -l; tail -qn1 checkpoints/progress_*.log 2>/dev/null || true
+    nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv,noheader ;;
 esac

@@ -18,6 +18,11 @@ def select(jobs, min_d: int, max_d: int, only: tuple[str, ...]):
             if min_d <= max(c.d_list) <= max_d and (not only or n.startswith(only))]
 
 
+def shard(jobs, index: int, count: int):
+    """Round-robin split so `count` worker processes can share one GPU."""
+    return [j for k, j in enumerate(jobs) if k % count == index]
+
+
 def pending(jobs):
     return [(n, c) for n, c in jobs
             if not ((ckpt_dir(n) / "best.pt").exists() and (ckpt_dir(n) / "log.json").exists())]
@@ -31,14 +36,16 @@ def main(argv=None):
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--steps", type=int, default=None, help="override steps (timing runs only)")
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--shard", default="0/1", help="i/n: this worker's share of the jobs")
     a = ap.parse_args(argv)
-    todo = pending(select(all_jobs(), a.min_d, a.max_d, tuple(a.only)))
+    i, n = map(int, a.shard.split("/"))
+    todo = pending(shard(select(all_jobs(), a.min_d, a.max_d, tuple(a.only)), i, n))
     print(f"{len(todo)} pending jobs on {a.device}", flush=True)
     if a.list:
         for n, _ in todo:
             print(" ", n)
         return
-    log = ckpt_dir("progress.log"); log.parent.mkdir(parents=True, exist_ok=True)
+    log = ckpt_dir(f"progress_{i}of{n}.log"); log.parent.mkdir(parents=True, exist_ok=True)
     for i, (name, cfg) in enumerate(todo, 1):
         cfg = replace(cfg, device=a.device, **({"steps": a.steps} if a.steps else {}))
         t0 = time.perf_counter()
