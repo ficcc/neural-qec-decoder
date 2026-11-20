@@ -6,3 +6,5 @@ __pycache__/
 .pytest_cache/
 Documents/
 checkpoints_local_d3.out
+_pull/
+logs/
