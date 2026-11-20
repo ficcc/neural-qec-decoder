@@ -14,6 +14,8 @@ E3_TRAIN_POOL = tuple(5000 + i for i in range(20))
 E3_TEST_POOL = tuple(9000 + i for i in range(3))
 E4_P = 0.004
 E4_BUDGETS = (1_000, 10_000, 100_000, 1_000_000)
+E6_TRAIN_GRID = (0.001, 0.0015, 0.002, 0.0025, 0.003, 0.0035)          # S4 p_th ~0.0035-0.004
+E6_TEST_P = (0.0015, 0.0025)
 DISTANCES = (3, 5, 7)
 SEEDS3 = (0, 1, 2)
 
@@ -41,6 +43,9 @@ def all_jobs() -> list[tuple[str, TrainConfig]]:
     for b in E4_BUDGETS:                                                    # E4: data budget
         for s in SEEDS3:
             jobs.append((f"e4/B{b}_s{s}", TrainConfig("S2", 0, (5,), (E4_P,), seed=s, fixed_shots=b)))
+    for d in DISTANCES:                                                     # E6: crosstalk
+        for s in ((0, 1, 2) if d == 5 else (0,)):
+            jobs.append((f"e6/S4_d{d}_s{s}", TrainConfig("S4", 0, (d,), E6_TRAIN_GRID, seed=s)))
     return jobs
 
 

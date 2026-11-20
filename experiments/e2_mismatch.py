@@ -64,17 +64,17 @@ def plot(rows):
     import matplotlib; matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     summ = summarise(rows)
-    decs = ["naive", "calibrated", "correlated", "gnn", "oracle"]
+    decs = ["naive", "calibrated", "correlated", "gnn", "oracle", "oracle_corr"]
     fig, axes = plt.subplots(1, len(E2_TEST_P), figsize=(11, 4), sharey=True)
     for ax, p in zip(np.atleast_1d(axes), E2_TEST_P):
-        x = np.arange(len(SCEN)); w = 0.16
+        x = np.arange(len(SCEN)); w = 0.14
         for j, dec in enumerate(decs):
             ratios, errs = [], []
             for s in SCEN:
                 m, e, _ = summ.get((s, 5, p, dec), (np.nan, 0, 0))
                 o = summ.get((s, 5, p, "oracle"), (np.nan, 0, 0))[0]
                 ratios.append(m / o); errs.append(e / o)
-            ax.bar(x + (j - 2) * w, ratios, w, yerr=errs, capsize=2, label=dec)
+            ax.bar(x + (j - 2.5) * w, ratios, w, yerr=errs, capsize=2, label=dec)
         ax.axhline(1, color="k", lw=0.8); ax.set_xticks(x, SCEN); ax.set_title(f"d=5, p={p}")
     np.atleast_1d(axes)[0].set_ylabel("LER / oracle-matching LER"); np.atleast_1d(axes)[0].legend(fontsize=7)
     Path("figures").mkdir(exist_ok=True)
