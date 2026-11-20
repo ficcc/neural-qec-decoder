@@ -170,3 +170,32 @@ neural-qec-decoder/
 - Plot styling.
 
 **Stretch, only if E1–E5 are done:** X-basis memory; belief-matching baseline; fine-tuning the GNN on a small t₁ sample in S3, compared against recalibrating MWPM on the same sample.
+
+## 10. Extensions (added 2026-11-20)
+
+### 10.1 S4 — crosstalk (experiment E6)
+
+**Noise:**
+- SI1000 base, no heterogeneity.
+- After each CX layer, for every pair of neighbouring data qubits (lattice distance 2) acted on by *different* CX gates in that layer:
+  - `CORRELATED_ERROR(p_xt) X_a X_b`
+  - `CORRELATED_ERROR(p_xt) Z_a Z_b`
+  - with p_xt = xt·p, where xt = 1.0.
+- These weight-2 faults produce hyperedges, which a matching graph must decompose into independent edges.
+
+**Decoders:** naive (SI1000 without crosstalk), calibrated, oracle, correlated (on the naive DEM), and **oracle_corr** (correlated matching on the true DEM). oracle_corr is the strongest classical baseline and is added to every experiment.
+
+**Setup:**
+- GNN: one per d ∈ {3, 5, 7} (seed 0), plus seeds 1 and 2 at d = 5.
+- Test p ∈ {0.002, 0.004}. Training grid = E2's.
+
+### 10.2 E7 — adapting to drift with few shots
+
+**Setup:** S3 instances 0–2, d = 5, p = 0.004. Budgets n ∈ {10³, 10⁴, 10⁵} post-drift (t1) shots.
+
+**Compared:**
+- Stale calibrated matching (fitted on t0 data).
+- Recalibrated matching (p_ij on the n t1 shots).
+- Stale GNN (`e2/S3_i*_d5_s0`).
+- Fine-tuned GNN: initialised from the stale GNN, trained on the n t1 shots (fixed buffer), lr 1e-4, up to 2000 steps, with early stopping on a separate 2000-shot t1 validation set. Those 2000 validation shots are reported as extra data used.
+- Oracle and oracle_corr on t1.
