@@ -18,9 +18,9 @@ case "${1:-status}" in
     python -m experiments.train_jobs --only e1/d7_s0 --min-d 7 --device cuda --steps 100
     python -c "import json;l=json.load(open('checkpoints/_timing/e1/d7_s0/log.json'));print('d=7 s/step:', round(l['wall_time']/100,3))" ;;
   train)
-    N=${WORKERS:-3}   # several small-model workers keep one GPU busy
+    N=${WORKERS:-2}   # several small-model workers keep one GPU busy
     for i in $(seq 0 $((N-1))); do
-      OMP_NUM_THREADS=8 nohup python -m experiments.train_jobs --min-d ${MIN_D:-5} --device cuda --shard $i/$N > train_$i.out 2>&1 &
+      PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True OMP_NUM_THREADS=8 nohup python -m experiments.train_jobs --min-d ${MIN_D:-5} --device cuda --shard $i/$N > train_$i.out 2>&1 &
     done
     echo "started $N workers; tail -f train_*.out" ;;
   status)

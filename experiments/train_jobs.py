@@ -9,7 +9,7 @@ from dataclasses import replace
 
 import torch
 
-from experiments.jobs import all_jobs, ckpt_dir
+from experiments.jobs import ablation_jobs, all_jobs, ckpt_dir
 from src.train import train_gnn
 
 
@@ -37,9 +37,10 @@ def main(argv=None):
     ap.add_argument("--steps", type=int, default=None, help="override steps (timing runs only)")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--shard", default="0/1", help="i/n: this worker's share of the jobs")
+    ap.add_argument("--ablation", action="store_true", help="run the ablation jobs instead")
     a = ap.parse_args(argv)
     i, n = map(int, a.shard.split("/"))
-    todo = pending(shard(select(all_jobs(), a.min_d, a.max_d, tuple(a.only)), i, n))
+    todo = pending(shard(select(ablation_jobs() if a.ablation else all_jobs(), a.min_d, a.max_d, tuple(a.only)), i, n))
     print(f"{len(todo)} pending jobs on {a.device}", flush=True)
     if a.list:
         for n, _ in todo:

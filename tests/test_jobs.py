@@ -66,3 +66,11 @@ def test_shards_partition_jobs():
     parts = [shard(jobs, i, 3) for i in range(3)]
     names = [n for p in parts for n, _ in p]
     assert sorted(names) == sorted(n for n, _ in jobs) and len(names) == len(set(names))
+
+
+def test_ablation_jobs_separate_and_deeper():
+    from experiments.jobs import ablation_jobs
+    abl = dict(ablation_jobs())
+    assert not set(abl) & {n for n, _ in all_jobs()}
+    cfg = abl["abl/d7_L8_H96_s0"]
+    assert (cfg.layers, cfg.hidden, cfg.d_list) == (8, 96, (7,))

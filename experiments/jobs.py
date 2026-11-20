@@ -42,3 +42,8 @@ def all_jobs() -> list[tuple[str, TrainConfig]]:
         for s in SEEDS3:
             jobs.append((f"e4/B{b}_s{s}", TrainConfig("S2", 0, (5,), (E4_P,), seed=s, fixed_shots=b)))
     return jobs
+
+
+def ablation_jobs() -> list[tuple[str, TrainConfig]]:
+    """Receptive-field / capacity ablation at d=7 (blueprint 'Test A' mechanism check)."""
+    return [("abl/d7_L8_H96_s0", TrainConfig("S0", 0, (7,), E1_GRID, seed=0, layers=8, hidden=96))]
