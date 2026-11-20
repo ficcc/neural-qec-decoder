@@ -1,0 +1,4 @@
+{"S0": {"sigma": 0.0, "n_bad": 0, "bad_mult": 1.0, "delta": 0.0},
+ "S1": {"sigma": 0.5, "n_bad": 0, "bad_mult": 1.0, "delta": 0.0},
+ "S2": {"sigma": 0.5, "n_bad": 3, "bad_mult": 8.0, "delta": 0.0},
+ "S3": {"sigma": 0.5, "n_bad": 3, "bad_mult": 8.0, "delta": 0.3}}
