@@ -44,7 +44,17 @@ This is the second portfolio project for PhD applications to Monash (Scalable Qu
 
 ## 4. Noise model and scenarios
 
-**Base model:** circuit-level depolarising noise with the same structure as Stim's built-in generated noise. It is applied by our own noise-insertion pass over a noiseless `stim.Circuit.generated("surface_code:rotated_memory_z", ...)` circuit, so that rates can differ per qubit and per gate:
+**Base model (revised 2026-11-20 after reviewing the blueprint report):** **SI1000** superconducting-inspired circuit noise:
+- DEPOLARIZE2(p) after each CX.
+- DEPOLARIZE1(p/10) after single-qubit Cliffords.
+- X_ERROR(2p) after resets.
+- X_ERROR(5p) before measurements.
+- DEPOLARIZE1(p/10) on idle qubits each moment.
+- DEPOLARIZE1(2p) on qubits idling during a measurement/reset moment (resonator idle).
+
+The scenario multipliers in the table below apply per channel on top of these SI1000 base rates. The Stim-built-in-compatible structure described next is retained only as the exact-equivalence unit test of the insertion pass.
+
+*Original text, kept for the equivalence test:* circuit-level depolarising noise with the same structure as Stim's built-in generated noise. It is applied by our own noise-insertion pass over a noiseless `stim.Circuit.generated("surface_code:rotated_memory_z", ...)` circuit, so that rates can differ per qubit and per gate:
 - DEPOLARIZE2(p_g) after each CX.
 - DEPOLARIZE1(p_q) after single-qubit Cliffords.
 - DEPOLARIZE1(p_q) on data qubits at the start of each round (this stands in for idle noise).
@@ -113,6 +123,15 @@ Under S3, calibrated MWPM and the GNN both use t₀ data and are tested at t₁,
 - Wilson 95% intervals for each point. Enough test shots to observe ≥ 100 logical errors where feasible, and an upper bound where not.
 - GNN: ≥ 3 training seeds. S1–S3: ≥ 3 device instances. Report mean ± std across them.
 - MWPM collection may use sinter. GNN evaluation uses a custom loop on the same test shots, so every decoder decodes **identical syndromes**.
+
+### 6.1 Revisions adopted 2026-11-20 (blueprint report review)
+
+1. **Training budget:** about 5M shots per model (5000 steps × 1024). Neural decoder accuracy is reported to saturate at 10⁶–10⁷ shots. This cuts compute about 4×.
+2. **SI1000 base noise** (§4).
+3. **E2 training error rates include near-threshold values** to avoid label starvation at d = 7 below threshold. The test error rates stay below threshold.
+4. **Reporting:**
+   - The error-suppression factor Λ, from a log-linear fit of ε_L(d) ∝ Λ^{-(d+1)/2} at fixed p.
+   - E5 latency at batch sizes B ∈ {1, 64, 4096}, with median and p99.
 
 ## 7. Repo layout (proposal)
 
