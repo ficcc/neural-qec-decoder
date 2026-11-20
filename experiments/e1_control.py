@@ -12,7 +12,7 @@ from src.runner import gnn_decoder, matching_decoders
 from src.scenarios import device_instance, load_scenarios
 from src.train import TrainConfig, load_gnn, train_gnn, train_seed
 
-P_GRID = (0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.010, 0.012)
+P_GRID = (0.0015, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.010)  # SI1000 p_th ~ 0.008 (d5/d7 naive crossing)
 
 
 def threshold(rows, da=5, db=7):
@@ -39,13 +39,13 @@ def main(argv=None):
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--d", type=int, nargs="*", default=[3, 5, 7])
-    ap.add_argument("--steps", type=int, default=20000)
+    ap.add_argument("--steps", type=int, default=5000)
     ap.add_argument("--train-only", action="store_true")
     a = ap.parse_args(argv)
     ds, grid, seeds, steps, max_shots, cal = a.d, P_GRID, a.seeds, a.steps, 2_000_000, 1_000_000
     tag = "e1"
     if a.quick:
-        ds, grid, seeds, steps, max_shots, cal, tag = [3], (0.006, 0.010), 1, 300, 20_000, 20_000, "e1_quick"
+        ds, grid, seeds, steps, max_shots, cal, tag = [3], (0.003, 0.006), 1, 300, 20_000, 20_000, "e1_quick"
     sc = load_scenarios()["S0"]
     out = Path(f"results/{tag}.jsonl")
     if out.exists() and not a.train_only:

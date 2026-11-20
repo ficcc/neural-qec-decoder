@@ -79,3 +79,15 @@ def append_jsonl(rows: list[dict], path: Path) -> None:
     with path.open("a") as f:
         for r in rows:
             f.write(json.dumps(r) + "\n")
+
+
+def fit_lambda(eps_by_d: dict[int, float]) -> float:
+    """Error-suppression factor from eps_L(d) ∝ Λ^{-(d+1)/2}: log-linear least squares.
+    Points with eps <= 0 (no observed errors) are excluded."""
+    pts = [(d, e) for d, e in sorted(eps_by_d.items()) if e > 0]
+    if len(pts) < 2:
+        return float("nan")
+    x = np.array([(d + 1) / 2 for d, _ in pts])
+    y = np.log([e for _, e in pts])
+    slope = np.polyfit(x, y, 1)[0]
+    return float(np.exp(-slope))

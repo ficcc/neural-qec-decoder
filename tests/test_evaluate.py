@@ -72,3 +72,15 @@ def test_calibrated_beats_naive_on_s2():
     e_cal, e_naive = count_errors_matching(cal, dets, obs), count_errors_matching(naive, dets, obs)
     lo, hi = wilson(e_cal, n)
     assert e_cal / n <= e_naive / n + 2 * (hi - lo) / 2
+
+
+def test_fit_lambda_recovers_synthetic():
+    from src.evaluate import fit_lambda
+    eps = {d: 0.03 * 2.0 ** (-(d + 1) / 2) for d in (3, 5, 7)}
+    assert fit_lambda(eps) == pytest.approx(2.0)
+
+
+def test_fit_lambda_ignores_zero_points():
+    from src.evaluate import fit_lambda
+    eps = {3: 0.01, 5: 0.005, 7: 0.0}
+    assert fit_lambda(eps) == pytest.approx(2.0)

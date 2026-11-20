@@ -55,3 +55,8 @@ def test_learns_d3(tmp_path):
     log = json.loads((tmp_path / "log.json").read_text())
     majority_err = min(log["val_flip_rate"], 1 - log["val_flip_rate"])
     assert log["best_val_ler"] < majority_err - 0.02
+
+
+def test_default_budget_is_about_5M_shots():
+    cfg = TrainConfig(scenario="S0", instance=0, d_list=(3,), p_grid=(0.004,))
+    assert cfg.steps * cfg.batch_size == 5000 * 1024

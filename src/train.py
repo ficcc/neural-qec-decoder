@@ -23,7 +23,7 @@ class TrainConfig:
     instance: int
     d_list: tuple[int, ...]
     p_grid: tuple[float, ...]
-    steps: int = 20000
+    steps: int = 5000
     batch_size: int = 1024
     lr: float = 1e-3
     hidden: int = 64
