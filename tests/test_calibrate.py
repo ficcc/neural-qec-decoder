@@ -63,3 +63,13 @@ def test_calibrated_keeps_observables():
     m = calibrated_matching(naive_dem, _sample(true_c, 2000, 0))
     naive = {(u, v): a["fault_ids"] for u, v, a in matching_from_dem(naive_dem).edges()}
     assert {(u, v): a["fault_ids"] for u, v, a in m.edges()} == naive
+
+
+def test_chunked_moments_match_unchunked():
+    from src.calibrate import estimate_edge_probs
+    true_c, naive_dem = _setup(3, 0.004, "S2")
+    dets = _sample(true_c, 5000, 3)
+    edges = [(u, v) for u, v, _ in matching_from_dem(naive_dem).edges()]
+    a = estimate_edge_probs(dets, edges)
+    b = estimate_edge_probs(dets, edges, chunk=700)
+    assert np.allclose(a, b, rtol=1e-12, atol=1e-15)

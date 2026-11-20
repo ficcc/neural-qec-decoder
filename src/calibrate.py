@@ -10,7 +10,8 @@ def matching_from_dem(dem: stim.DetectorErrorModel) -> pymatching.Matching:
     return pymatching.Matching.from_detector_error_model(dem)
 
 
-def estimate_edge_probs(dets: np.ndarray, edges: list[tuple[int, int | None]]) -> np.ndarray:
+def estimate_edge_probs(dets: np.ndarray, edges: list[tuple[int, int | None]],
+                        chunk: int = 100_000) -> np.ndarray:
     """Estimate each edge's flip probability from detection-event correlations.
 
     Bulk edge (i, j): p_ij = 1/2 - 1/2 sqrt(1 - 4(<x_i x_j> - <x_i><x_j>) /
@@ -18,9 +19,13 @@ def estimate_edge_probs(dets: np.ndarray, edges: list[tuple[int, int | None]]) -
     Boundary edge (i, None): the part of <x_i> not explained by i's bulk edges,
     using <x_i> = 1/2 - 1/2 prod_e (1 - 2 p_e).
     """
-    x = dets.astype(np.float64)
-    mean = x.mean(axis=0)
-    second = (x.T @ x) / len(x)
+    # First and second moments accumulated in chunks (a 1e6 x n_det float64 copy is ~2.7 GB at d=7).
+    n_det = dets.shape[1]
+    s1 = np.zeros(n_det); s2 = np.zeros((n_det, n_det))
+    for i in range(0, len(dets), chunk):
+        x = dets[i:i + chunk].astype(np.float64)
+        s1 += x.sum(axis=0); s2 += x.T @ x
+    mean, second = s1 / len(dets), s2 / len(dets)
     p = np.empty(len(edges))
     bulk_factor = np.ones(len(mean))   # prod over bulk edges at node of (1 - 2 p_e)
     for k, (i, j) in enumerate(edges):

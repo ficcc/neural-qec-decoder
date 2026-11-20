@@ -23,6 +23,21 @@ case "${1:-status}" in
       PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True OMP_NUM_THREADS=8 nohup python -m experiments.train_jobs --min-d ${MIN_D:-5} --device cuda --shard $i/$N > train_$i.out 2>&1 &
     done
     echo "started $N workers; tail -f train_*.out" ;;
+  eval)
+    # One single-threaded process per evaluation point: E1 27, E2 54, E3 11, E4 12 (104 of 128 cores).
+    mkdir -p logs
+    for spec in e1_control:27 e2_mismatch:54 e3_generalise:11 e4_budget:12; do
+      m=${spec%%:*}; n=${spec##*:}
+      for i in $(seq 0 $((n-1))); do
+        OMP_NUM_THREADS=1 nohup python -m experiments.$m --shard $i/$n > logs/${m}_$i.out 2>&1 &
+      done
+    done
+    echo "started evaluation shards" ;;
+  latency)
+    python -m experiments.e5_latency --device cuda
+    OMP_NUM_THREADS=8 python -m experiments.e5_latency --device cpu ;;
+  evalstatus)
+    echo "running: $(ps -eo args | grep -c '^python -m experiments.e[1-4]_')"; grep -l Traceback logs/*.out 2>/dev/null | head ;;
   status)
     python -m experiments.train_jobs --min-d 5 --list | head -1; cat checkpoints/progress_*.log 2>/dev/null | wc -l; tail -qn1 checkpoints/progress_*.log 2>/dev/null || true
     nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv,noheader ;;
