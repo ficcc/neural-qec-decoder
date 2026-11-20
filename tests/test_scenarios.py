@@ -73,4 +73,5 @@ def test_s4_has_uniform_crosstalk_only():
     assert t0 == t1
     for f in FIELDS:
         assert np.allclose(_vals(t0, f), _vals(ref, f))
-    assert len(t0.p_xt) == 2 * 5 * 4 and all(v == pytest.approx(0.003) for v in t0.p_xt.values())
+    assert len(t0.p_xt) == 2 * 5 * 4 and all(v == pytest.approx(SC["S4"].xt * 0.003) for v in t0.p_xt.values())
+    assert SC["S4"].xt == 0.25

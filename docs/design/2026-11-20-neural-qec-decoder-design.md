@@ -180,7 +180,7 @@ neural-qec-decoder/
 - After each CX layer, for every pair of neighbouring data qubits (lattice distance 2) acted on by *different* CX gates in that layer:
   - `CORRELATED_ERROR(p_xt) X_a X_b`
   - `CORRELATED_ERROR(p_xt) Z_a Z_b`
-  - with p_xt = xt·p, where xt = 1.0.
+  - with p_xt = xt·p, where xt = 0.25 (xt = 1.0 was above threshold at p = 0.004: per-round LER grew with d). The S4 threshold is about 0.0035–0.004, so S4 tests at p ∈ {0.0015, 0.0025} and trains on 0.001–0.0035.
 - These weight-2 faults produce hyperedges, which a matching graph must decompose into independent edges.
 
 **Decoders:** naive (SI1000 without crosstalk), calibrated, oracle, correlated (on the naive DEM), and **oracle_corr** (correlated matching on the true DEM). oracle_corr is the strongest classical baseline and is added to every experiment.
