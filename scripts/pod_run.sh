@@ -5,6 +5,9 @@
 #   bash scripts/pod_run.sh status   # progress so far
 set -euo pipefail
 cd /workspace/neural-qec-decoder
+# venv that reuses the image's CUDA torch (the system Python is PEP 668 externally managed)
+[ -d /workspace/venv ] || python3 -m venv --system-site-packages /workspace/venv
+source /workspace/venv/bin/activate
 if [ ! -f .deps_ok ]; then
   pip install -q stim pymatching sinter numpy matplotlib pytest
   python -c "import torch; assert torch.cuda.is_available(), 'no CUDA'; print('GPU:', torch.cuda.get_device_name(0))"
