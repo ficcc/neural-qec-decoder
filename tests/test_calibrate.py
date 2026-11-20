@@ -3,7 +3,7 @@ import pytest
 
 from src.calibrate import calibrated_matching, matching_from_dem
 from src.circuits import dem_of, noiseless_circuit
-from src.noise import apply_noise, uniform_model
+from src.noise import apply_noise, si1000_model
 from src.scenarios import device_instance, load_scenarios
 from src.seeds import SEEDS
 
@@ -14,7 +14,7 @@ def _setup(d, p, scen, seed=1):
     c = noiseless_circuit(d, d)
     t0, _ = device_instance(c, p, SC[scen], seed)
     true_c = apply_noise(c, t0)
-    naive_dem = dem_of(apply_noise(c, uniform_model(c, p)))
+    naive_dem = dem_of(apply_noise(c, si1000_model(c, p)))
     return true_c, naive_dem
 
 

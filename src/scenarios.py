@@ -6,10 +6,10 @@ from pathlib import Path
 import numpy as np
 import stim
 
-from src.noise import NoiseModel, uniform_model
+from src.noise import NoiseModel, si1000_model
 
 P_CAP = 0.25
-FIELDS = ("p_1q", "p_2q", "p_reset", "p_meas", "p_data")
+FIELDS = ("p_1q", "p_2q", "p_reset", "p_meas", "p_data", "p_idle", "p_res_idle")
 
 
 @dataclass(frozen=True)
@@ -26,11 +26,11 @@ def load_scenarios(path: str | Path = "configs/scenarios.json") -> dict[str, Sce
     return {k: ScenarioConfig(name=k, **v) for k, v in raw.items()}
 
 
-def _finish(rates: dict[str, np.ndarray], p: float) -> dict[str, np.ndarray]:
-    """Renormalise each channel to mean p, then clip to P_CAP."""
+def _finish(rates: dict[str, np.ndarray], target: dict[str, float]) -> dict[str, np.ndarray]:
+    """Renormalise each channel to its SI1000 mean, then clip to P_CAP."""
     out = {}
     for f, v in rates.items():
-        v = v * (p / v.mean()) if v.mean() > 0 else v
+        v = v * (target[f] / v.mean()) if v.mean() > 0 else v
         out[f] = np.minimum(v, P_CAP)
     return out
 
@@ -46,17 +46,19 @@ def device_instance(circuit: stim.Circuit, p: float, cfg: ScenarioConfig,
 
     The random pattern depends only on (circuit, cfg, seed), not on p.
     """
-    template = uniform_model(circuit, 1.0)
+    template = si1000_model(circuit, 1.0)   # per-channel SI1000 multipliers of p
+    base = {f: np.array(list(getattr(template, f).values())) for f in FIELDS}
+    target = {f: p * base[f].mean() if len(base[f]) else 0.0 for f in FIELDS}
     rng = np.random.default_rng(seed)
-    z = {f: rng.standard_normal(len(getattr(template, f))) for f in FIELDS}
-    rates = {f: p * np.exp(cfg.sigma * z[f]) for f in FIELDS}
+    z = {f: rng.standard_normal(len(base[f])) for f in FIELDS}
+    rates = {f: p * base[f] * np.exp(cfg.sigma * z[f]) for f in FIELDS}
     if cfg.n_bad:
         bad = rng.choice(len(template.p_2q), size=cfg.n_bad, replace=False)
         rates["p_2q"][bad] *= cfg.bad_mult
-    t0 = _finish(rates, p)
+    t0 = _finish(rates, target)
     if cfg.delta > 0:
         z1 = {f: rng.standard_normal(len(getattr(template, f))) for f in FIELDS}
-        t1 = _finish({f: t0[f] * np.exp(cfg.delta * z1[f]) for f in FIELDS}, p)
+        t1 = _finish({f: t0[f] * np.exp(cfg.delta * z1[f]) for f in FIELDS}, target)
     else:
         t1 = t0
     return _to_model(template, t0), _to_model(template, t1)

@@ -49,7 +49,7 @@ def test_checkpoint_roundtrip(tmp_path):
 
 @pytest.mark.slow
 def test_learns_d3(tmp_path):
-    cfg = TrainConfig(scenario="S0", instance=0, d_list=(3,), p_grid=(0.02,), steps=400,
+    cfg = TrainConfig(scenario="S0", instance=0, d_list=(3,), p_grid=(0.006,), steps=400,
                       batch_size=512, hidden=32, layers=3, val_shots=10_000, val_every=100)
     train_gnn(cfg, tmp_path)
     log = json.loads((tmp_path / "log.json").read_text())

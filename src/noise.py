@@ -5,7 +5,7 @@ Mirrors the placement of Stim's built-in generated noise
 before_measure_flip_probability, before_round_data_depolarization),
 but every qubit and every CX pair can carry its own rate.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import stim
 
@@ -20,6 +20,8 @@ class NoiseModel:
     p_reset: dict[int, float]             # X_ERROR after resets
     p_meas: dict[int, float]              # X_ERROR before measurements
     p_data: dict[int, float]              # DEPOLARIZE1 on data qubits at round start
+    p_idle: dict[int, float] = field(default_factory=dict)      # idle in a gate moment
+    p_res_idle: dict[int, float] = field(default_factory=dict)  # idle in a measure/reset moment
 
 
 def _iter_ops(circuit: stim.Circuit):
@@ -68,6 +70,22 @@ def uniform_model(circuit: stim.Circuit, p: float) -> NoiseModel:
         p_data=dict(sorted(data.items())))
 
 
+def si1000_model(circuit: stim.Circuit, p: float) -> NoiseModel:
+    """SI1000 (Gidney et al. 2021): CX p, 1q p/10, reset 2p, measure 5p,
+    idle p/10, idle during measurement/reset moments 2p."""
+    base = uniform_model(circuit, p)
+    used = sorted({t.value for op in _iter_ops(circuit) for t in op.targets_copy()
+                   if t.is_qubit_target})
+    return NoiseModel(
+        p_1q={q: p / 10 for q in base.p_1q},
+        p_2q=dict(base.p_2q),
+        p_reset={q: 2 * p for q in base.p_reset},
+        p_meas={q: 5 * p for q in base.p_meas},
+        p_data={q: 0.0 for q in base.p_data},
+        p_idle={q: p / 10 for q in used},
+        p_res_idle={q: 2 * p for q in used})
+
+
 def _grouped(name: str, targets: list[int], rate_of) -> stim.Circuit:
     """One noise instruction per distinct nonzero rate, targets in original order."""
     out = stim.Circuit()
@@ -94,7 +112,15 @@ def _grouped_pairs(targets: list[int], p_2q) -> stim.Circuit:
 def apply_noise(circuit: stim.Circuit, model: NoiseModel) -> stim.Circuit:
     """Return a noisy copy of `circuit` with the rates in `model`."""
     data_qubits = list(model.p_data)
-    state = {"last_gate": None}
+    state = {"last_gate": None, "moment": set(), "moment_mr": False}
+    all_qubits = list(model.p_idle)
+    NOISE_FREE = {"DETECTOR", "OBSERVABLE_INCLUDE", "SHIFT_COORDS", "QUBIT_COORDS"}
+
+    def close_moment() -> stim.Circuit:
+        idle = [q for q in all_qubits if q not in state["moment"]]
+        rates = model.p_res_idle if state["moment_mr"] else model.p_idle
+        state["moment"], state["moment_mr"] = set(), False
+        return _grouped("DEPOLARIZE1", idle, rates.__getitem__) if idle else stim.Circuit()
 
     def walk(block: stim.Circuit) -> stim.Circuit:
         out = stim.Circuit()
@@ -104,11 +130,17 @@ def apply_noise(circuit: stim.Circuit, model: NoiseModel) -> stim.Circuit:
                 continue
             name, q = op.name, _qubits(op)
             if name == "TICK":
+                if all_qubits:
+                    out += close_moment()
                 out.append(op)
                 # Round start: the TICK right after a reset or measure-reset layer.
                 if state["last_gate"] in RESETS | {"MR"}:
                     out += _grouped("DEPOLARIZE1", data_qubits, model.p_data.__getitem__)
                 continue
+            if name not in NOISE_FREE:
+                state["moment"].update(q)
+                if name in RESETS | {"M", "MZ", "MR"}:
+                    state["moment_mr"] = True
             if name in ("M", "MZ", "MR"):
                 out += _grouped("X_ERROR", q, model.p_meas.__getitem__)
             out.append(op)
@@ -118,7 +150,7 @@ def apply_noise(circuit: stim.Circuit, model: NoiseModel) -> stim.Circuit:
                 out += _grouped("DEPOLARIZE1", q, model.p_1q.__getitem__)
             elif name == "CX":
                 out += _grouped_pairs(q, model.p_2q)
-            if name not in ("DETECTOR", "OBSERVABLE_INCLUDE", "SHIFT_COORDS", "QUBIT_COORDS"):
+            if name not in NOISE_FREE:
                 state["last_gate"] = name
         return out
 
