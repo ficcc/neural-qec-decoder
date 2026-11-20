@@ -12,7 +12,7 @@ from src.runner import gnn_decoder, matching_decoders
 from src.scenarios import device_instance, load_scenarios
 from src.train import TrainConfig, load_gnn, train_gnn, train_seed
 
-P_GRID = (0.0015, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.010)  # SI1000 p_th ~ 0.008 (d5/d7 naive crossing)
+from experiments.jobs import E1_GRID as P_GRID, all_jobs, ckpt_dir
 
 
 def threshold(rows, da=5, db=7):
@@ -51,10 +51,14 @@ def main(argv=None):
     if out.exists() and not a.train_only:
         out.unlink()
     models = {}
+    jobs = dict(all_jobs())
     for d in ds:
         for s in range(seeds):
-            cfg = TrainConfig(scenario="S0", instance=0, d_list=(d,), p_grid=grid, steps=steps, seed=s)
-            models[(d, s)] = get_gnn(cfg, Path(f"checkpoints/{tag}/d{d}_s{s}"))
+            if a.quick:
+                cfg = TrainConfig(scenario="S0", instance=0, d_list=(d,), p_grid=grid, steps=steps, seed=s)
+                models[(d, s)] = get_gnn(cfg, Path(f"checkpoints/{tag}/d{d}_s{s}"))
+            else:   # same configs/checkpoints train_jobs.py produces (possibly on a GPU pod)
+                models[(d, s)] = get_gnn(jobs[f"e1/d{d}_s{s}"], ckpt_dir(f"e1/d{d}_s{s}"))
     if a.train_only:
         return
     for d in ds:
