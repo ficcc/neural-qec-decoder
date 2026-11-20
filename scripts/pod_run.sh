@@ -20,7 +20,7 @@ case "${1:-status}" in
   train)
     N=${WORKERS:-3}   # several small-model workers keep one GPU busy
     for i in $(seq 0 $((N-1))); do
-      OMP_NUM_THREADS=8 nohup python -m experiments.train_jobs --min-d 5 --device cuda --shard $i/$N > train_$i.out 2>&1 &
+      OMP_NUM_THREADS=8 nohup python -m experiments.train_jobs --min-d ${MIN_D:-5} --device cuda --shard $i/$N > train_$i.out 2>&1 &
     done
     echo "started $N workers; tail -f train_*.out" ;;
   status)

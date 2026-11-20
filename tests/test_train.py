@@ -57,11 +57,6 @@ def test_learns_d3(tmp_path):
     assert log["best_val_ler"] < majority_err - 0.02
 
 
-def test_default_budget_is_about_5M_shots():
-    cfg = TrainConfig(scenario="S0", instance=0, d_list=(3,), p_grid=(0.004,))
-    assert cfg.steps * cfg.batch_size == 5000 * 1024
-
-
 def test_device_field_roundtrips(tmp_path):
     cfg = TrainConfig(scenario="S0", instance=0, d_list=(3,), p_grid=(0.006,), steps=3,
                       batch_size=32, hidden=8, layers=1, val_shots=64, val_every=3, device="cpu")
@@ -82,3 +77,15 @@ def test_fixed_shot_budget_caps_shots(tmp_path):
     train_gnn(cfg, tmp_path)
     log = json.loads((tmp_path / "log.json").read_text())
     assert log["unique_train_shots"] == 256
+
+
+def test_lr_decays_to_near_zero(tmp_path):
+    cfg = TrainConfig(scenario="S0", instance=0, d_list=(3,), p_grid=(0.006,), steps=20,
+                      batch_size=32, hidden=8, layers=1, val_shots=64, val_every=10)
+    train_gnn(cfg, tmp_path)
+    lrs = [h["lr"] for h in json.loads((tmp_path / "log.json").read_text())["history"]]
+    assert lrs[0] < cfg.lr and lrs[-1] < 0.05 * cfg.lr
+
+
+def test_default_budget_is_12k_steps():
+    assert TrainConfig(scenario="S0", instance=0, d_list=(3,), p_grid=(0.004,)).steps == 12000

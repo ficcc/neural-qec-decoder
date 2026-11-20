@@ -23,7 +23,7 @@ class TrainConfig:
     instance: int
     d_list: tuple[int, ...]
     p_grid: tuple[float, ...]
-    steps: int = 5000
+    steps: int = 12000
     batch_size: int = 1024
     lr: float = 1e-3
     hidden: int = 64
@@ -109,6 +109,7 @@ def train_gnn(cfg: TrainConfig, out_dir: Path) -> Path:
 
     model = GNNDecoder(hidden=cfg.hidden, layers=cfg.layers).to(cfg.device)
     opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
+    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=cfg.steps)
     best, bad, history = float("inf"), 0, []
     ckpt = out_dir / "best.pt"
     t0, total = time.perf_counter(), 0
@@ -127,10 +128,11 @@ def train_gnn(cfg: TrainConfig, out_dir: Path) -> Path:
         logits = model(g)
         y = torch.from_numpy(obs[:, 0].astype(np.float32)).to(cfg.device)
         loss = F.binary_cross_entropy_with_logits(logits[g.nonempty], y[g.nonempty])
-        opt.zero_grad(); loss.backward(); opt.step()
+        opt.zero_grad(); loss.backward(); opt.step(); sched.step()
         if step % cfg.val_every == 0 or step == cfg.steps:
             vl, ler = _evaluate(model, val, tables, cfg.k, cfg.device)
-            history.append({"step": step, "train_loss": loss.item(), "val_bce": vl, "val_ler": ler})
+            history.append({"step": step, "train_loss": loss.item(), "val_bce": vl, "val_ler": ler,
+                            "lr": sched.get_last_lr()[0]})
             if vl < best:
                 best, bad = vl, 0
                 torch.save({"state_dict": model.state_dict(), "cfg": asdict(cfg), "val_ler": ler}, ckpt)
