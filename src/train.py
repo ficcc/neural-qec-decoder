@@ -33,6 +33,9 @@ class TrainConfig:
     val_shots: int = 20000
     val_every: int = 500
     patience: int = 8
+    device: str = "cpu"
+    instance_pool: tuple[int, ...] | None = None   # train across many random devices (E3)
+    fixed_shots: int | None = None                 # cap on unique training shots (E4)
 
 
 def instance_seed(instance: int, d: int) -> int:
@@ -48,14 +51,18 @@ def val_seed(idx: int) -> int:
     return SEEDS["val"] + idx
 
 
-def make_circuits(cfg: TrainConfig) -> dict[tuple[int, float], stim.Circuit]:
-    """Noisy t0 circuits for every (d, p) in the training grid."""
+def make_circuits(cfg: TrainConfig) -> dict[tuple, stim.Circuit]:
+    """Noisy t0 circuits keyed (d, p), or (d, p, device_seed) when training on an instance pool."""
     sc = load_scenarios()[cfg.scenario]
     out = {}
     for d in cfg.d_list:
         c = noiseless_circuit(d, d)
         for p in cfg.p_grid:
-            out[(d, p)] = apply_noise(c, device_instance(c, p, sc, instance_seed(cfg.instance, d))[0])
+            if cfg.instance_pool is None:
+                out[(d, p)] = apply_noise(c, device_instance(c, p, sc, instance_seed(cfg.instance, d))[0])
+            else:
+                for s in cfg.instance_pool:
+                    out[(d, p, s)] = apply_noise(c, device_instance(c, p, sc, s)[0])
     return out
 
 
@@ -63,12 +70,12 @@ def _graph(dets, d, tables, k):
     return build_graph_batch(dets, tables[d], d=d, rounds=d, k=k)
 
 
-def _evaluate(model, val, tables, k):
+def _evaluate(model, val, tables, k, device="cpu"):
     model.eval()
     losses, errs, n = 0.0, 0, 0
     with torch.no_grad():
         for d, dets, obs in val:
-            logits = model(_graph(dets, d, tables, k))
+            logits = model(_graph(dets, d, tables, k).to(device)).cpu()
             y = torch.from_numpy(obs.astype(np.float32))
             losses += F.binary_cross_entropy_with_logits(logits, y, reduction="sum").item()
             errs += int(((logits > 0).numpy() != obs).sum())
@@ -94,7 +101,13 @@ def train_gnn(cfg: TrainConfig, out_dir: Path) -> Path:
         val.append((d, dets, obs[:, 0]))
     val_flip = float(np.mean(np.concatenate([o for _, _, o in val])))
 
-    model = GNNDecoder(hidden=cfg.hidden, layers=cfg.layers)
+    buffers = None
+    if cfg.fixed_shots is not None:
+        per_key = max(1, cfg.fixed_shots // len(keys))
+        buffers = [s.sample(per_key, separate_observables=True) for s in samplers]
+    unique = cfg.fixed_shots and per_key * len(keys)
+
+    model = GNNDecoder(hidden=cfg.hidden, layers=cfg.layers).to(cfg.device)
     opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
     best, bad, history = float("inf"), 0, []
     ckpt = out_dir / "best.pt"
@@ -102,17 +115,21 @@ def train_gnn(cfg: TrainConfig, out_dir: Path) -> Path:
     for step in range(1, cfg.steps + 1):
         i = int(rng.integers(len(keys)))
         d = keys[i][0]
-        dets, obs = samplers[i].sample(cfg.batch_size, separate_observables=True)
+        if buffers is None:
+            dets, obs = samplers[i].sample(cfg.batch_size, separate_observables=True)
+        else:
+            idx = rng.integers(len(buffers[i][1]), size=cfg.batch_size)
+            dets, obs = buffers[i][0][idx], buffers[i][1][idx]
         total += cfg.batch_size
-        g = _graph(dets, d, tables, cfg.k)
+        g = _graph(dets, d, tables, cfg.k).to(cfg.device)
         if not g.nonempty.any():
             continue
         logits = model(g)
-        y = torch.from_numpy(obs[:, 0].astype(np.float32))
+        y = torch.from_numpy(obs[:, 0].astype(np.float32)).to(cfg.device)
         loss = F.binary_cross_entropy_with_logits(logits[g.nonempty], y[g.nonempty])
         opt.zero_grad(); loss.backward(); opt.step()
         if step % cfg.val_every == 0 or step == cfg.steps:
-            vl, ler = _evaluate(model, val, tables, cfg.k)
+            vl, ler = _evaluate(model, val, tables, cfg.k, cfg.device)
             history.append({"step": step, "train_loss": loss.item(), "val_bce": vl, "val_ler": ler})
             if vl < best:
                 best, bad = vl, 0
@@ -124,15 +141,18 @@ def train_gnn(cfg: TrainConfig, out_dir: Path) -> Path:
     best_ler = min((h["val_ler"] for h in history if h["val_bce"] == best), default=float("nan"))
     (out_dir / "log.json").write_text(json.dumps({
         "cfg": asdict(cfg), "history": history, "n_params": model.n_params(),
-        "total_shots": total, "wall_time": time.perf_counter() - t0,
+        "total_shots": total, "unique_train_shots": unique if cfg.fixed_shots else total,
+        "wall_time": time.perf_counter() - t0,
         "best_val_bce": best, "best_val_ler": best_ler, "val_flip_rate": val_flip}, indent=1))
     return ckpt
 
 
 def load_gnn(path: Path) -> tuple[GNNDecoder, TrainConfig]:
-    saved = torch.load(path, weights_only=False)
+    saved = torch.load(path, weights_only=False, map_location="cpu")
     raw = saved["cfg"]
-    cfg = TrainConfig(**{**raw, "d_list": tuple(raw["d_list"]), "p_grid": tuple(raw["p_grid"])})
+    pool = raw.get("instance_pool")
+    cfg = TrainConfig(**{**raw, "d_list": tuple(raw["d_list"]), "p_grid": tuple(raw["p_grid"]),
+                         "instance_pool": tuple(pool) if pool is not None else None})
     model = GNNDecoder(hidden=cfg.hidden, layers=cfg.layers)
     model.load_state_dict(saved["state_dict"])
     model.eval()

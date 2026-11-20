@@ -60,3 +60,25 @@ def test_learns_d3(tmp_path):
 def test_default_budget_is_about_5M_shots():
     cfg = TrainConfig(scenario="S0", instance=0, d_list=(3,), p_grid=(0.004,))
     assert cfg.steps * cfg.batch_size == 5000 * 1024
+
+
+def test_device_field_roundtrips(tmp_path):
+    cfg = TrainConfig(scenario="S0", instance=0, d_list=(3,), p_grid=(0.006,), steps=3,
+                      batch_size=32, hidden=8, layers=1, val_shots=64, val_every=3, device="cpu")
+    model, cfg2 = load_gnn(train_gnn(cfg, tmp_path))
+    assert cfg2.device == "cpu" and next(model.parameters()).device.type == "cpu"
+
+
+def test_instance_pool_samples_several_devices(tmp_path):
+    cfg = TrainConfig(scenario="S1", instance=0, d_list=(3,), p_grid=(0.004,), instance_pool=(5000, 5001, 5002))
+    circs = make_circuits(cfg)
+    assert len(circs) == 3 and len(set(map(str, circs.values()))) == 3
+    assert {k[2] for k in circs} == {5000, 5001, 5002}
+
+
+def test_fixed_shot_budget_caps_shots(tmp_path):
+    cfg = TrainConfig(scenario="S0", instance=0, d_list=(3,), p_grid=(0.006,), steps=50,
+                      batch_size=64, hidden=8, layers=1, val_shots=64, val_every=10, fixed_shots=256)
+    train_gnn(cfg, tmp_path)
+    log = json.loads((tmp_path / "log.json").read_text())
+    assert log["unique_train_shots"] == 256

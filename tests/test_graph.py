@@ -74,3 +74,11 @@ def test_type_split():
     n_x, n_z = int(t[:, 3].sum()), int((1 - t[:, 3]).sum())
     # d=3, 3 rounds: 4 X-ancillas x 2 rounds = 8 X dets; 4 Z x 3 rounds + 4 final = 16 Z dets.
     assert (n_x, n_z) == (8, 16)
+
+
+def test_graph_batch_to_device_keeps_values():
+    t = _table(3)
+    g = build_graph_batch(_dets_with_counts(len(t), [0, 4, 3]), t, d=3, rounds=3, k=8)
+    h = g.to("cpu")
+    assert torch.equal(h.x, g.x) and torch.equal(h.edge_index, g.edge_index)
+    assert h.n_graphs == g.n_graphs and torch.equal(h.nonempty, g.nonempty)

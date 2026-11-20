@@ -17,6 +17,10 @@ class GraphBatch:
     n_graphs: int
     nonempty: torch.Tensor    # (n_graphs,) bool
 
+    def to(self, device) -> "GraphBatch":
+        return GraphBatch(self.x.to(device), self.edge_index.to(device), self.edge_attr.to(device),
+                          self.batch.to(device), self.n_graphs, self.nonempty.to(device))
+
 
 def detector_table(circuit: stim.Circuit, d: int) -> np.ndarray:
     """(n_det, 4) array: x, y, t, is_x_type. X-type = ancilla that receives H gates."""
