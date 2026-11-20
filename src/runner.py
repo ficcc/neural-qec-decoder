@@ -32,6 +32,7 @@ def matching_decoders(c: stim.Circuit, p: float, t0: NoiseModel, t1: NoiseModel,
         "oracle": _m(matching_from_dem(dem_of(t1_c))),
         "calibrated": _m(calibrated_matching(naive_dem, cal_dets)),
         "correlated": _m(pymatching.Matching.from_detector_error_model(naive_dem, enable_correlations=True), True),
+        "oracle_corr": _m(pymatching.Matching.from_detector_error_model(dem_of(t1_c), enable_correlations=True), True),
     }
     return decs, t1_c
 

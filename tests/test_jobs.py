@@ -10,6 +10,7 @@ def test_job_names_unique_and_counts():
     assert len(by("e2/")) == 27 + 6       # 3 scen x 3 inst x 3 d, + S2 i0 seeds 1,2 x 3 d
     assert len(by("e3/")) == 5            # S0 d35 x3 seeds, S1 pool d35, S1 pool d7
     assert len(by("e4/")) == 12           # 4 budgets x 3 seeds
+    assert len(by("e6/")) == 5            # S4 d in {3,5,7} seed 0, + d=5 seeds 1,2
 
 
 def test_gpu_split_is_d5_and_up():
@@ -74,3 +75,8 @@ def test_ablation_jobs_separate_and_deeper():
     assert not set(abl) & {n for n, _ in all_jobs()}
     cfg = abl["abl/d7_L8_H96_s0"]
     assert (cfg.layers, cfg.hidden, cfg.d_list) == (8, 96, (7,))
+
+
+def test_e6_grid_below_s4_threshold():
+    from experiments.jobs import E6_TEST_P, E6_TRAIN_GRID
+    assert max(E6_TRAIN_GRID) <= 0.0035 and max(E6_TEST_P) < max(E6_TRAIN_GRID)

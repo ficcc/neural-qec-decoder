@@ -24,18 +24,17 @@ case "${1:-status}" in
     done
     echo "started $N workers; tail -f train_*.out" ;;
   eval)
-    # One single-threaded process per evaluation point: E1 27, E2 54, E3 11, E4 12 (104 of 128 cores).
+    # The pod's cgroup allows ~13.6 CPUs and 62 GB RAM (the host shows 128 cores), so run the
+    # ~119 single-point evaluation shards as a queue, PAR at a time.
     mkdir -p logs
-    for spec in e1_control:27 e2_mismatch:54 e3_generalise:11 e4_budget:12 e6_crosstalk:6; do
+    : > logs/eval_cmds.txt
+    for spec in e1_control:27 e2_mismatch:54 e3_generalise:11 e4_budget:12 e6_crosstalk:6 e7_drift_adapt:9; do
       m=${spec%%:*}; n=${spec##*:}
-      for i in $(seq 0 $((n-1))); do
-        OMP_NUM_THREADS=1 nohup python -m experiments.$m --shard $i/$n > logs/${m}_$i.out 2>&1 &
-      done
+      for i in $(seq 0 $((n-1))); do echo "$m $i $n" >> logs/eval_cmds.txt; done
     done
-    for i in $(seq 0 8); do   # E7 fine-tunes a GNN per point, so give it a few threads
-      OMP_NUM_THREADS=4 nohup python -m experiments.e7_drift_adapt --shard $i/9 > logs/e7_drift_adapt_$i.out 2>&1 &
-    done
-    echo "started evaluation shards" ;;
+    # e7 first (it fine-tunes, so it is the slowest per point), then the rest
+    { grep '^e7' logs/eval_cmds.txt; grep -v '^e7' logs/eval_cmds.txt; } |       xargs -P ${PAR:-12} -L 1 sh -c 'OMP_NUM_THREADS=1 python -m experiments.$0 --shard $1/$2 > logs/$0_$1.out 2>&1'
+    echo "evaluation finished" ;;
   latency)
     python -m experiments.e5_latency --device cuda
     OMP_NUM_THREADS=8 python -m experiments.e5_latency --device cpu ;;

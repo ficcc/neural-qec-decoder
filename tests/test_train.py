@@ -89,3 +89,28 @@ def test_lr_decays_to_near_zero(tmp_path):
 
 def test_default_budget_is_12k_steps():
     assert TrainConfig(scenario="S0", instance=0, d_list=(3,), p_grid=(0.004,)).steps == 12000
+
+
+def test_use_t1_builds_post_drift_circuits():
+    a = make_circuits(TrainConfig("S3", 0, (3,), (0.004,)))
+    b = make_circuits(TrainConfig("S3", 0, (3,), (0.004,), use_t1=True))
+    assert a[(3, 0.004)] != b[(3, 0.004)]
+
+
+def test_init_from_starts_at_source_weights(tmp_path):
+    src = TrainConfig("S0", 0, (3,), (0.006,), steps=5, batch_size=32, hidden=8, layers=1,
+                      val_shots=64, val_every=5)
+    p0 = train_gnn(src, tmp_path / "src")
+    ft = TrainConfig("S0", 0, (3,), (0.006,), steps=1, batch_size=32, hidden=8, layers=1,
+                     val_shots=64, val_every=1, lr=0.0, init_from=str(p0))
+    p1 = train_gnn(ft, tmp_path / "ft")
+    m0, _ = load_gnn(p0); m1, _ = load_gnn(p1)
+    for a, b in zip(m0.state_dict().values(), m1.state_dict().values()):
+        assert torch.equal(a, b)
+
+
+def test_training_runs_with_instance_pool(tmp_path):
+    cfg = TrainConfig("S1", 0, (3,), (0.004,), steps=4, batch_size=32, hidden=8, layers=1,
+                      val_shots=60, val_every=2, instance_pool=(5000, 5001))
+    path = train_gnn(cfg, tmp_path)
+    assert path.exists()

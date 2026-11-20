@@ -10,7 +10,7 @@ def test_s0_naive_equals_oracle_and_all_present():
     c = noiseless_circuit(3, 3)
     t0, t1 = device_instance(c, 0.006, load_scenarios()["S0"], 0)
     decs, test_c = matching_decoders(c, 0.006, t0, t1, cal_shots=20_000, cal_seed=5)
-    assert set(decs) == {"naive", "oracle", "calibrated", "correlated"}
+    assert set(decs) == {"naive", "oracle", "calibrated", "correlated", "oracle_corr"}
     dets, obs = sample_shots(test_c, 20_000, seed=9)
     assert decs["naive"](dets, obs) == decs["oracle"](dets, obs)
     assert decs["correlated"](dets, obs) <= decs["naive"](dets, obs) * 1.2 + 5

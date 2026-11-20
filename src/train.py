@@ -36,6 +36,8 @@ class TrainConfig:
     device: str = "cpu"
     instance_pool: tuple[int, ...] | None = None   # train across many random devices (E3)
     fixed_shots: int | None = None                 # cap on unique training shots (E4)
+    use_t1: bool = False                           # train on post-drift (t1) noise (E7 fine-tuning)
+    init_from: str | None = None                   # checkpoint to start from (E7 fine-tuning)
 
 
 def instance_seed(instance: int, d: int) -> int:
@@ -59,7 +61,8 @@ def make_circuits(cfg: TrainConfig) -> dict[tuple, stim.Circuit]:
         c = noiseless_circuit(d, d)
         for p in cfg.p_grid:
             if cfg.instance_pool is None:
-                out[(d, p)] = apply_noise(c, device_instance(c, p, sc, instance_seed(cfg.instance, d))[0])
+                models = device_instance(c, p, sc, instance_seed(cfg.instance, d))
+                out[(d, p)] = apply_noise(c, models[1] if cfg.use_t1 else models[0])
             else:
                 for s in cfg.instance_pool:
                     out[(d, p, s)] = apply_noise(c, device_instance(c, p, sc, s)[0])
@@ -95,10 +98,10 @@ def train_gnn(cfg: TrainConfig, out_dir: Path) -> Path:
                 for i, key in enumerate(keys)]
     per = max(1, cfg.val_shots // len(keys))
     val = []
-    for i, (d, p) in enumerate(keys):
-        dets, obs = circuits[(d, p)].compile_detector_sampler(seed=val_seed(i)).sample(
+    for i, key in enumerate(keys):
+        dets, obs = circuits[key].compile_detector_sampler(seed=val_seed(i)).sample(
             per, separate_observables=True)
-        val.append((d, dets, obs[:, 0]))
+        val.append((key[0], dets, obs[:, 0]))
     val_flip = float(np.mean(np.concatenate([o for _, _, o in val])))
 
     buffers = None
@@ -107,7 +110,10 @@ def train_gnn(cfg: TrainConfig, out_dir: Path) -> Path:
         buffers = [s.sample(per_key, separate_observables=True) for s in samplers]
     unique = cfg.fixed_shots and per_key * len(keys)
 
-    model = GNNDecoder(hidden=cfg.hidden, layers=cfg.layers).to(cfg.device)
+    model = GNNDecoder(hidden=cfg.hidden, layers=cfg.layers)
+    if cfg.init_from:
+        model.load_state_dict(torch.load(cfg.init_from, weights_only=False, map_location="cpu")["state_dict"])
+    model = model.to(cfg.device)
     opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=cfg.steps)
     best, bad, history = float("inf"), 0, []
