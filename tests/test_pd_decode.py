@@ -101,3 +101,28 @@ def test_empty_and_single_defect_batches():
     assert r.n_removed_dets[1] == 1 and not r.residual.any()          # lone defect leaves via its boundary edge
     none = predecode(_const(20, 20), table, dt, dets, d=3, tau=1.01)
     assert none.n_removed_dets.sum() == 0 and np.array_equal(none.residual, dets)
+
+
+def test_score_once_apply_many_taus_matches_predecode():
+    from src.predecoder import apply_tau, score
+    c, noisy, dem, table, dt, matching = _setup(3)
+    dets, obs, errs = sample_with_faults(dem, 4000, seed=8)
+    torch.manual_seed(1)
+    model = PreDecoder(hidden=8, layers=1)
+    sc = score(model, table, dt, dets, d=3, batch=1500)
+    for tau in (0.0, 0.4, 0.5, 0.9, 1.01):
+        a = apply_tau(sc, table, dets, tau)
+        b = predecode(model, table, dt, dets, d=3, tau=tau, batch=1500)
+        assert np.array_equal(a.residual, b.residual) and np.array_equal(a.logical, b.logical)
+        assert np.array_equal(a.n_removed_dets, b.n_removed_dets)
+
+
+def test_removed_faults_are_recorded():
+    c, noisy, dem, table, dt, matching = _setup(3)
+    dets, obs, errs = sample_with_faults(dem, 3000, seed=5)
+    iso = isolated_faults(table, fault_parity(table, errs))
+    r = predecode(_oracle(table, iso), table, dt, dets, d=3, tau=0.5, batch=3000)
+    assert len(r.removed_shot) == len(r.removed_edge) > 0
+    ends = 1 + (table.v[r.removed_edge] >= 0)
+    assert int(ends.sum()) == int(r.n_removed_dets.sum())
+    assert iso[r.removed_shot, r.removed_edge].all()                    # the oracle only removes true isolated faults

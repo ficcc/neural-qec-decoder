@@ -83,6 +83,18 @@ class RemovalResult:
     logical: np.ndarray         # (B,) bool, XOR of the removed faults' logical labels
     n_removed_dets: np.ndarray  # (B,) int
     n_fired: np.ndarray         # (B,) int, fired detectors before removal
+    removed_shot: np.ndarray = None   # (R,) shot index of each removed fault
+    removed_edge: np.ndarray = None   # (R,) edge id of each removed fault
+
+
+@dataclass
+class Scores:
+    """Network output for every candidate of a set of shots; thresholds are applied afterwards."""
+    shot: np.ndarray    # (C,) shot index
+    det_a: np.ndarray   # (C,) first detector
+    det_b: np.ndarray   # (C,) second detector, -1 for a boundary candidate
+    edge: np.ndarray    # (C,) edge id
+    prob: np.ndarray    # (C,) probability the fault is isolated
 
 
 def select_removals(shot: np.ndarray, det_a: np.ndarray, det_b: np.ndarray, prob: np.ndarray,
@@ -108,36 +120,52 @@ def select_removals(shot: np.ndarray, det_a: np.ndarray, det_b: np.ndarray, prob
     return keep
 
 
-def predecode(model, table: EdgeTable, det_table: np.ndarray, dets: np.ndarray, d: int, tau: float,
-              k: int = 8, batch: int = 4096, device: str = "cpu") -> RemovalResult:
-    """Remove faults the model scores >= tau; return the residual syndrome and the logical contribution."""
+def score(model, table: EdgeTable, det_table: np.ndarray, dets: np.ndarray, d: int, k: int = 8,
+          batch: int = 4096, device: str = "cpu") -> Scores:
+    """Run the network once over all shots and collect every candidate with its probability."""
     from src.graph import build_graph_batch
-    B = dets.shape[0]
-    residual = dets.copy()
-    logical_count = np.zeros(B, dtype=np.int64)
-    n_removed = np.zeros(B, dtype=np.int64)
+    parts = []
     getattr(model, "eval", lambda: None)()
     with torch.no_grad():
-        for s in range(0, B, batch):
+        for s in range(0, dets.shape[0], batch):
             g = build_graph_batch(dets[s:s + batch], det_table, d=d, rounds=d, k=k).to(device)
             c = build_candidates(g, table)
             pair_logit, bnd_logit = model(g, c)
             node_shot, node_det = g.batch.cpu().numpy(), g.det.cpu().numpy()
             ps, pd_ = c.pair_src.cpu().numpy(), c.pair_dst.cpu().numpy()
             bn = c.bnd_node.cpu().numpy()
-            shot = np.concatenate([node_shot[ps], node_shot[bn]])
-            det_a = np.concatenate([node_det[ps], node_det[bn]])
-            det_b = np.concatenate([node_det[pd_], -np.ones(len(bn), dtype=np.int64)])
-            edge = np.concatenate([c.pair_edge.cpu().numpy(), c.bnd_edge.cpu().numpy()])
-            prob = np.concatenate([torch.sigmoid(pair_logit).cpu().numpy(), torch.sigmoid(bnd_logit).cpu().numpy()])
-            keep = select_removals(shot, det_a, det_b, prob, tau)
-            rows, a, b, e = shot[keep] + s, det_a[keep], det_b[keep], edge[keep]
-            residual[rows, a] = False
-            has_b = b >= 0
-            residual[rows[has_b], b[has_b]] = False
-            np.add.at(logical_count, rows, table.label[e].astype(np.int64))
-            np.add.at(n_removed, rows, 1 + has_b.astype(np.int64))
-    return RemovalResult(residual, logical_count % 2 == 1, n_removed, dets.sum(axis=1))
+            parts.append((
+                np.concatenate([node_shot[ps], node_shot[bn]]) + s,
+                np.concatenate([node_det[ps], node_det[bn]]),
+                np.concatenate([node_det[pd_], -np.ones(len(bn), dtype=np.int64)]),
+                np.concatenate([c.pair_edge.cpu().numpy(), c.bnd_edge.cpu().numpy()]),
+                np.concatenate([torch.sigmoid(pair_logit).cpu().numpy(), torch.sigmoid(bnd_logit).cpu().numpy()])))
+    if not parts:
+        e = np.zeros(0, dtype=np.int64)
+        return Scores(e, e, e, e, np.zeros(0))
+    return Scores(*(np.concatenate(x) for x in zip(*parts)))
+
+
+def apply_tau(sc: Scores, table: EdgeTable, dets: np.ndarray, tau: float) -> RemovalResult:
+    """Remove the faults scored >= tau (conflicts resolved by probability); return residual + logical."""
+    B = dets.shape[0]
+    keep = select_removals(sc.shot, sc.det_a, sc.det_b, sc.prob, tau)
+    rows, a, b, e = sc.shot[keep], sc.det_a[keep], sc.det_b[keep], sc.edge[keep]
+    residual = dets.copy()
+    residual[rows, a] = False
+    has_b = b >= 0
+    residual[rows[has_b], b[has_b]] = False
+    logical_count = np.zeros(B, dtype=np.int64)
+    n_removed = np.zeros(B, dtype=np.int64)
+    np.add.at(logical_count, rows, table.label[e].astype(np.int64))
+    np.add.at(n_removed, rows, 1 + has_b.astype(np.int64))
+    return RemovalResult(residual, logical_count % 2 == 1, n_removed, dets.sum(axis=1), rows, e)
+
+
+def predecode(model, table: EdgeTable, det_table: np.ndarray, dets: np.ndarray, d: int, tau: float,
+              k: int = 8, batch: int = 4096, device: str = "cpu") -> RemovalResult:
+    """Remove faults the model scores >= tau; return the residual syndrome and the logical contribution."""
+    return apply_tau(score(model, table, det_table, dets, d, k, batch, device), table, dets, tau)
 
 
 def predecoded_errors(model, table: EdgeTable, det_table: np.ndarray, matching, dets: np.ndarray,
