@@ -41,6 +41,14 @@ TAU_FILE = RESULTS / "e9_tau.json"
 CKPT_QUICK = Path("checkpoints/e9_quick")
 
 
+def eval_budget(d: int, p: float) -> dict:
+    """Shots/errors budget per test point. The verdict point (d=7, p=0.002) has only ~150 matching errors
+    per 100k shots, too few to decide a 1.05 ratio, so it gets a much larger error budget."""
+    if (d, p) == (7, 0.002):
+        return {"min_errors": 1000, "max_shots": 5_000_000}
+    return {"min_errors": 100, "max_shots": 2_000_000}
+
+
 def choose_tau(removed_frac: dict, ratio: dict, max_ratio: float = 1.02) -> float:
     """Largest removed fraction among taus whose LER ratio is within max_ratio; else the largest tau."""
     ok = [t for t in removed_frac if ratio[t] <= max_ratio]
@@ -86,6 +94,7 @@ def select_tau(models, d: int = 5, val_shots: int = 100_000, p_val=P_VAL, out: P
     ratio = {t: errs_pd[t] / max(errs_base, 1) for t in TAU_GRID}
     result = {"tau": choose_tau(removed_frac, ratio), "d": d, "p_val": list(p_val), "val_shots": val_shots,
               "n_models": len(models), "max_ratio": 1.02, "errors_matching": errs_base,
+              "eval_budget": {f"{dd},{pp}": eval_budget(dd, pp) for dd in DS for pp in P_TEST},
               "removed_frac": {str(t): v for t, v in removed_frac.items()},
               "ratio": {str(t): v for t, v in ratio.items()}}
     if out is not None:
@@ -132,8 +141,10 @@ def run_points(pts, out_jsonl: Path, tau: float, d35_models, ref_model, max_shot
                 add_pd("pd_ref", ("ref", 0), ref_model, tau)
             for t in TAU_GRID:
                 add_pd(f"pd_s0_tau{t}", ("d35", 0), d35_models[0], t)
+        budget = eval_budget(d, p)
         rows = evaluate_point(d=d, p=p, scenario="S0", instance=0, test_circuit=noisy, decoders=decs,
-                              stop_on="matching", max_shots=max_shots,
+                              stop_on="matching", min_errors=budget["min_errors"],
+                              max_shots=budget["max_shots"] if budget["min_errors"] > 100 else max_shots,
                               save_errors=Path(shots_dir) / f"e9_d{d}_p{p}.npz")
         for r in rows:
             fired = stats[r["decoder"]][1]
@@ -211,6 +222,26 @@ def plot_results(rows: list[dict], shots_dir: Path, fig_dir: Path) -> dict:
             "paired_d7": {str(p): v for p, v in paired.items()}}
 
 
+def time_components(model, table, det_table, matching, dets, d: int, tau: float) -> dict:
+    """Microseconds per shot of each stage. The pre-decoder's cost is inference PLUS the removal step
+    (greedy conflict resolution), reported separately and summed; matching on full vs residual syndrome."""
+    def clock(fn, reps=3):
+        ts = []
+        for _ in range(reps):
+            t0 = time.perf_counter()
+            fn()
+            ts.append(time.perf_counter() - t0)
+        return float(np.median(ts)) / len(dets) * 1e6
+    sc = score(model, table, det_table, dets, d)
+    r = apply_tau(sc, table, dets, tau)
+    inference = clock(lambda: score(model, table, det_table, dets, d), reps=1)
+    removal = clock(lambda: apply_tau(sc, table, dets, tau))
+    return {"matching_full": clock(lambda: matching.decode_batch(dets)),
+            "matching_residual": clock(lambda: matching.decode_batch(r.residual)),
+            "predecoder_inference": inference, "removal": removal, "predecoder_total": inference + removal,
+            "fired_per_shot": float(r.n_fired.mean()), "residual_per_shot": float((r.n_fired - r.n_removed_dets).mean())}
+
+
 def diagnostics(models, tau: float, out: Path) -> dict:
     """Removal precision/recall of isolated faults (fault-labelled shots) and timing per shot."""
     res = {"tau": tau, "precision_recall": {}, "timing_us_per_shot": {}}
@@ -231,18 +262,7 @@ def diagnostics(models, tau: float, out: Path) -> dict:
             _, noisy, table, det_table, matching = point_setup(d, p)
             dets, _ = sample_shots(noisy, 20_000, seed=test_seed(950 + d))
 
-            def clock(fn, reps=3):
-                ts = []
-                for _ in range(reps):
-                    t0 = time.perf_counter(); fn(); ts.append(time.perf_counter() - t0)
-                return float(np.median(ts)) / len(dets) * 1e6
-            sc = score(models[0], table, det_table, dets, d)
-            r = apply_tau(sc, table, dets, tau)
-            res["timing_us_per_shot"][f"d{d}_p{p}"] = {
-                "matching_full": clock(lambda: matching.decode_batch(dets)),
-                "matching_residual": clock(lambda: matching.decode_batch(r.residual)),
-                "predecoder_inference": clock(lambda: score(models[0], table, det_table, dets, d), reps=1),
-                "fired_per_shot": float(r.n_fired.mean()), "residual_per_shot": float((r.n_fired - r.n_removed_dets).mean())}
+            res["timing_us_per_shot"][f"d{d}_p{p}"] = time_components(models[0], table, det_table, matching, dets, d, tau)
     Path(out).parent.mkdir(parents=True, exist_ok=True)
     Path(out).write_text(json.dumps(res, indent=1))
     return res
@@ -273,9 +293,9 @@ def main(argv=None):
         out = RESULTS / "raw" / "e9_quick.jsonl"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.unlink(missing_ok=True)
-        run_points([(3, 0.004)], out, res["tau"], [model], None, 20_000, RESULTS / "shots")
+        run_points([(3, 0.004)], out, res["tau"], [model], None, 20_000, RESULTS / "shots_quick")
         rows = [json.loads(l) for l in out.read_text().splitlines()]
-        print(json.dumps(plot_results(rows, RESULTS / "shots", RESULTS / "figs")["summary"]))
+        print(json.dumps(plot_results(rows, RESULTS / "shots_quick", RESULTS / "figs")["summary"]))
         return
     if a.select_tau:
         d35, _ = _load_models()
