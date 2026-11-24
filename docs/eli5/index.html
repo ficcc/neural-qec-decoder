@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quantum error correction, explained with smoke alarms</title>
+<meta name="description" content="An interactive, plain-language explanation of decoding quantum errors: play with the toy models, then explore the real measured results.">
+<style>
+:root{
+  --bg:#fbfaf7; --ink:#1d1f23; --muted:#5d636d; --card:#ffffff; --line:#e2ded4;
+  --accent:#0b6e69; --on-accent:#ffffff; --accent-soft:#d7ece9; --warn:#b4470f; --warn-soft:#fbe3d3;
+  --ok:#17803d; --ok-soft:#d9f0e0; --bad:#b3261e; --bad-soft:#f8dcd9; --grid:#e8e4da;
+  --serif:ui-serif,Georgia,"Times New Roman",serif; --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#14161a; --ink:#ecebe6; --muted:#a3a8b1; --card:#1c1f24; --line:#2d3239;
+    --accent:#4cc3bb; --on-accent:#0d1f20; --accent-soft:#17383a; --warn:#f0925a; --warn-soft:#3b2619;
+    --ok:#5ed38a; --ok-soft:#173424; --bad:#ff8f86; --bad-soft:#40201e; --grid:#2a2e35; }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{animation:none!important;transition:none!important} }
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:780px;margin:0 auto;padding:0 20px}
+header.hero{padding:56px 0 28px;border-bottom:1px solid var(--line)}
+.eyebrow{font:600 13px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+h1{font:700 clamp(30px,5.4vw,44px)/1.12 var(--serif);margin:0 0 16px;letter-spacing:-.01em}
+h2{font:700 clamp(24px,3.6vw,30px)/1.2 var(--serif);margin:0 0 10px;letter-spacing:-.005em}
+h3{font:600 17px/1.3 var(--sans);margin:20px 0 6px}
+.lead{font-size:19px;color:var(--muted);max-width:60ch;margin:0 0 18px}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+nav.toc a{font-size:14px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:var(--card);color:var(--ink)}
+nav.toc a:hover,nav.toc a:focus-visible{border-color:var(--accent);color:var(--accent)}
+section{padding:44px 0 8px;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+p{margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:18px 0}
+.note{font-size:14.5px;color:var(--muted)}
+.tag{display:inline-block;font:600 12px/1 var(--sans);padding:4px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent);margin-right:6px;vertical-align:middle}
+.tag.real{background:var(--ok-soft);color:var(--ok)}
+.tag.toy{background:var(--warn-soft);color:var(--warn)}
+.controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin:10px 0 4px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--card);color:var(--ink);font:inherit;font-size:15px;padding:7px 13px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"],.seg button[aria-checked="true"]{background:var(--accent);color:var(--on-accent)}
+button.act{font:600 15px var(--sans);border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);border-radius:10px;padding:8px 14px;cursor:pointer}
+button.act.ghost{background:transparent;color:var(--accent)}
+button:focus-visible,[tabindex]:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+label{font-size:15px;color:var(--muted)}
+input[type=range]{accent-color:var(--accent);width:min(260px,60vw)}
+select{font:inherit;font-size:15px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+.out{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+svg{width:100%;height:auto;display:block}
+svg text{font-family:var(--sans);fill:var(--muted);font-size:13px}
+.qubit{cursor:pointer}
+.qubit circle{fill:var(--card);stroke:var(--ink);stroke-width:2.2;transition:fill .15s}
+.qubit.bad circle{fill:var(--warn-soft);stroke:var(--warn)}
+.qubit.bad text.bang{fill:var(--warn);font-weight:700}
+.alarm rect{fill:var(--card);stroke:var(--line);stroke-width:2}
+.alarm.ring rect{fill:var(--bad-soft);stroke:var(--bad)}
+.alarm.ring{animation:ring .7s ease-in-out infinite alternate}
+@keyframes ring{from{transform:translateY(0)}to{transform:translateY(-2px)}}
+.fix circle{fill:none;stroke:var(--ok);stroke-width:3;stroke-dasharray:6 4}
+.wire{stroke:var(--line);stroke-width:2}
+.result{margin:10px 0 0;padding:10px 12px;border-radius:10px;font-size:16px;min-height:44px}
+.result.ok{background:var(--ok-soft);color:var(--ok)} .result.bad{background:var(--bad-soft);color:var(--bad)} .result.info{background:var(--accent-soft);color:var(--accent)}
+.bars{display:grid;gap:8px;margin:12px 0}
+.bar{display:grid;grid-template-columns:minmax(120px,210px) 1fr auto;gap:10px;align-items:center;font-size:15px}
+.bar .track{height:22px;background:var(--grid);border-radius:6px;position:relative;overflow:hidden}
+.bar .fill{height:100%;background:var(--accent);border-radius:6px;transition:width .25s}
+.bar .fill.warn{background:var(--warn)} .bar .fill.ok{background:var(--ok)} .bar .fill.bad{background:var(--bad)} .bar .fill.gray{background:#8b919b}
+.bar .tick{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.55}
+.bar .v{font-variant-numeric:tabular-nums;font-weight:600;min-width:86px;text-align:right}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:640px){.grid2{grid-template-columns:1fr}.bar{grid-template-columns:1fr auto}.bar .track{grid-column:1/-1;order:3}}
+table{border-collapse:collapse;width:100%;font-size:14.5px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right} th:first-child,td:first-child{text-align:left}
+tr.sel{background:var(--accent-soft)} tbody tr{cursor:pointer}
+.big{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0}
+.big div{flex:1 1 150px;background:var(--grid);border-radius:12px;padding:10px 14px}
+.big b{display:block;font:700 28px/1.2 var(--serif);font-variant-numeric:tabular-nums}
+.big span{font-size:14px;color:var(--muted)}
+.take{counter-reset:t;list-style:none;padding:0}
+.take li{counter-increment:t;display:grid;grid-template-columns:34px 1fr;gap:6px;margin:0 0 14px}
+.take li::before{content:counter(t);font:700 15px/28px var(--sans);width:28px;height:28px;text-align:center;border-radius:50%;background:var(--accent);color:var(--on-accent)}
+footer{padding:32px 0 60px;color:var(--muted);font-size:14.5px}
+.sr{position:absolute;left:-9999px}
+noscript .card{background:var(--warn-soft);color:var(--warn)}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+  <p class="eyebrow">Interactive explainer</p>
+  <h1>How do you fix a computer that makes mistakes all day long?</h1>
+  <p class="lead">Quantum computers are made of tiny, delicate parts that go wrong constantly. This page lets you play with the problem using smoke alarms, then shows what a real research project measured.</p>
+  <nav class="toc" aria-label="Sections">
+    <a href="#building">1. The alarm building</a><a href="#map">2. The wrong map</a><a href="#practice">3. The student</a>
+    <a href="#helper">4. The helper</a><a href="#results">5. Real results</a><a href="#honest">6. What we don't know</a>
+  </nav>
+  <noscript><div class="card">The simulations on this page need JavaScript. The text version is in <a href="../ELI5.md">ELI5.md</a>.</div></noscript>
+</div></header>
+
+<main class="wrap">
+
+<section id="building" aria-labelledby="h-building">
+  <h2 id="h-building">1. The alarm building</h2>
+  <p>Picture a row of delicate parts (<b>qubits</b>). Any of them can suddenly flip, like a light switch jumping on its own. Between every pair of neighbours there is a <b>smoke alarm</b> that rings when the two neighbours <em>disagree</em>. Nobody is allowed to look at the parts themselves; only the alarms are visible.</p>
+  <div class="card">
+    <span class="tag toy">Toy model</span><span class="note">Click a part to make a mistake, then ask the detective.</span>
+    <div class="controls">
+      <span class="note" id="lbl-size">Parts in the row</span>
+      <div class="seg" role="group" aria-labelledby="lbl-size" id="size-seg"></div>
+      <button class="act ghost" id="b-clear" type="button">Clear</button>
+      <button class="act ghost" id="b-rand" type="button">Random mistakes</button>
+    </div>
+    <div class="controls">
+      <label for="p-chance">Chance each part flips: <span class="out" id="p-chance-out">10%</span></label>
+      <input id="p-chance" type="range" min="1" max="40" value="10">
+    </div>
+    <svg id="svg-building" viewBox="0 0 700 230" role="img" aria-label="A row of parts with alarms between them"></svg>
+    <div class="controls"><button class="act" id="b-decode" type="button">Ask the detective to fix it</button></div>
+    <div class="result info" id="decode-out" role="status" aria-live="polite">Click a part (or press Enter on it) to flip it. Watch which alarms ring.</div>
+    <p class="note" style="margin-top:10px">The detective looks only at the alarms and picks the <em>fewest-mistakes</em> story that explains them. That is the idea behind <b>matching</b>, the classic decoder. A row of <span id="n-now">5</span> parts can always be fixed if at most <span id="k-now">2</span> flipped.</p>
+  </div>
+  <h3>Is a bigger building safer?</h3>
+  <div class="card">
+    <span class="tag toy">Toy model</span>
+    <div class="controls">
+      <label for="mc-p">Chance each part flips: <span class="out" id="mc-p-out">10%</span></label>
+      <input id="mc-p" type="range" min="1" max="40" value="10">
+      <button class="act" id="b-mc" type="button">Run 5,000 buildings of each size</button>
+    </div>
+    <div class="bars" id="mc-bars" aria-live="polite"></div>
+    <p class="note">Bar = how often the detective got it wrong (the tick marks the exact mathematical answer). If mistakes are rare enough, bigger rows are much safer, because more parts must go wrong at once. In the real work, the size of the building is called the <b>distance</b>, <i>d</i>.</p>
+  </div>
+</section>
+
+<section id="map" aria-labelledby="h-map">
+  <h2 id="h-map">2. What if the detective has the wrong map?</h2>
+  <p>Matching needs to know how shaky each part is. A detective with a <b>factory map</b> assumes every part is equally shaky. Real machines are uneven. Here, some parts are shakier than others. A third detective <b>redraws the map</b> just by watching which alarms ring together, with no peeking at the parts.</p>
+  <div class="card">
+    <span class="tag toy">Toy model</span><span class="note">7 parts. Bars above them show how shaky each really is.</span>
+    <div class="controls">
+      <span class="note" id="lbl-preset">Machine</span>
+      <div class="seg" role="group" aria-labelledby="lbl-preset" id="preset-seg"></div>
+    </div>
+    <div class="controls">
+      <label for="cal-n">Examples used to redraw the map: <span class="out" id="cal-n-out">1,000</span></label>
+      <input id="cal-n" type="range" min="1" max="5" value="3">
+    </div>
+    <svg id="svg-map" viewBox="0 0 700 150" role="img" aria-label="True shakiness of each part"></svg>
+    <div class="bars" id="map-bars" aria-live="polite"></div>
+    <p class="result info" id="map-msg" role="status"></p>
+    <p class="note">In the real experiments (full surface codes with uneven parts) this gap was <b>small</b>: at distance 5 the factory-map detective was only about 10% worse than the one with the true map, and redrawing the map from the alarms alone recovered essentially all of it. The "Very uneven" preset above is deliberately extreme.</p>
+  </div>
+</section>
+
+<section id="practice" aria-labelledby="h-practice">
+  <h2 id="h-practice">3. The student who learns from examples</h2>
+  <p>What if the detective had <em>no map at all</em>, and just practised? A <b>neural network</b> is a learner like that: it sees examples ("these alarms rang, and this is what had really happened") and gets better. The toy student below simply remembers, for every alarm pattern it has seen, which answer was right. For a pattern it has never seen, it has to guess.</p>
+  <div class="card">
+    <span class="tag toy">Toy model</span><span class="note">9 parts, each flips 20% of the time.</span>
+    <div class="controls">
+      <label for="prac-n">Practice examples: <span class="out" id="prac-n-out">30</span></label>
+      <input id="prac-n" type="range" min="0" max="9" value="1">
+    </div>
+    <svg id="svg-prac" viewBox="0 0 700 280" role="img" aria-label="Mistake rate against amount of practice"></svg>
+    <div class="bars" id="prac-bars" aria-live="polite"></div>
+    <p class="note">The map-redrawing detective is already good after a few hundred examples. The student needs thousands. In the real experiments the neural network needed about <b>100 times</b> more practice than the detective that redraws its map (a million examples against ten thousand). Section 5 shows the real numbers.</p>
+  </div>
+</section>
+
+<section id="helper" aria-labelledby="h-helper">
+  <h2 id="h-helper">4. A better job for the student: the helper</h2>
+  <p>Instead of replacing the detective, the student gets a smaller job: <b>tidy the obvious mess first</b>, then hand what is left to the classic detective. What counts as obvious? Two neighbouring alarms ring and <em>nobody else nearby</em> does: that is clearly one small mistake right between them.</p>
+  <div class="card">
+    <svg viewBox="0 0 700 150" role="img" aria-label="Alarms: two isolated pairs are obvious, a cluster is tricky">
+      <g id="demo-alarms"></g>
+    </svg>
+    <p class="note" style="margin:6px 0 0">Green: obvious pairs the helper can clear. Orange: a tangle the classic detective must untangle.</p>
+  </div>
+  <p>There is one dial: <b>how sure must the helper be before it clears something?</b> Too eager and it makes wrong calls; too picky and it does little. Here is what we <em>actually measured</em> in the biggest building we tested (distance 7), using a helper that had only ever practised on smaller buildings.</p>
+  <div class="card">
+    <span class="tag real">Real measurements</span><span class="note">Distance 7 · one trained helper · the ratio compares "helper + classic detective" with the classic detective alone</span>
+    <div class="controls">
+      <label for="h-p">How shaky the machine is (error rate): </label><select id="h-p"></select>
+      <label for="h-tau">Helper must be at least <span class="out" id="h-tau-out"></span> sure</label>
+      <input id="h-tau" type="range" min="0" max="8" value="4">
+    </div>
+    <div class="big" aria-live="polite">
+      <div><b id="h-removed">—</b><span>of the ringing alarms cleared by the helper</span></div>
+      <div><b id="h-ratio">—</b><span id="h-ratio-t">mistakes compared with the classic detective alone</span></div>
+    </div>
+    <svg id="svg-helper" viewBox="0 0 700 270" role="img" aria-label="Mistakes against fraction of alarms cleared"></svg>
+    <table aria-label="All thresholds"><thead><tr><th>Sure at least</th><th>Alarms cleared</th><th>Mistakes vs classic</th></tr></thead><tbody id="h-table"></tbody></table>
+    <p class="note" style="margin-top:10px">A ratio below 100% means the combination makes <em>fewer</em> mistakes than the classic detective alone. Clearing too much (a very eager helper) makes more.</p>
+  </div>
+  <div class="card">
+    <span class="tag real">Real measurements</span><span class="note">The confirmation on fresh puzzles (distance 7, error rate chosen above)</span>
+    <div class="bars" id="h-arms"></div>
+    <p class="note">The "too eager" setting (0.7) failed our pre-stated test at distance 7. A pickier setting (0.95) was added <em>before</em> looking at the fresh puzzles, and it passed: about 2% fewer mistakes at the quietest error rate while still clearing 63% of the alarms.</p>
+  </div>
+</section>
+
+<section id="results" aria-labelledby="h-results">
+  <h2 id="h-results">5. The real results, side by side</h2>
+  <p>Here are the measured error rates of every detective in the project. Pick the machine, the building size and how shaky it is. Bars show each detective's mistakes <b>relative to the factory-map detective</b> (100%). Shorter is better.</p>
+  <div class="card">
+    <span class="tag real">Real measurements</span>
+    <div class="controls">
+      <span class="note" id="lbl-exp">Experiment</span>
+      <div class="seg" role="group" aria-labelledby="lbl-exp" id="exp-seg"></div>
+    </div>
+    <div class="controls">
+      <label for="r-d">Building size <i>d</i>: </label><select id="r-d"><option>3</option><option>5</option><option>7</option></select>
+      <label for="r-p">Error rate: </label><select id="r-p"></select>
+    </div>
+    <div class="bars" id="r-bars" aria-live="polite"></div>
+    <p class="note" id="r-note"></p>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3 style="margin-top:0">Small building</h3><p class="note" style="margin:0">The student does very well at distance 3, and when mistakes are linked it can beat even the detective that knows the true map of single mistakes.</p></div>
+    <div class="card"><h3 style="margin-top:0">Big building</h3><p class="note" style="margin:0">At distance 7 the student falls behind: about twice as many mistakes as the classic detective. Starting it from what it learned on smaller buildings helped (about 15% fewer mistakes) but did not close the gap.</p></div>
+  </div>
+</section>
+
+<section id="honest" aria-labelledby="h-honest">
+  <h2 id="h-honest">6. What we are not sure about</h2>
+  <ul>
+    <li>Everything here is <b>simulated</b>, up to a building of distance 7. Nothing was run on a real quantum computer.</li>
+    <li>The student failing in the big building is about <em>this</em> student and <em>this</em> amount of practice, not about learning programs in general.</li>
+    <li>The helper, as written, is a research program and runs roughly <b>23 to 31 times slower</b> than the classic detective. Real machines need answers in about a millionth of a second.</li>
+    <li>The "pickier" setting was tested at one value, and the idea came from earlier results. We said so and tested it again on fresh puzzles with the rules written down first.</li>
+    <li>The toy models on this page are <b>illustrations</b>. The numbers in Sections 4 and 5 are the real measurements.</li>
+  </ul>
+  <h3>If you remember three things</h3>
+  <ol class="take">
+    <li><span>A detective with a wrong map is <b>not as bad as feared</b>: the classic detective can redraw its map just by watching.</span></li>
+    <li><span>A learning program works best as a <b>helper</b>, not a replacement: clear the obvious mess, leave the hard part to the classic detective.</span></li>
+    <li><span><b>How sure the helper must be</b> matters a lot, and the right level changes with the size of the machine.</span></li>
+  </ol>
+</section>
+</main>
+
+<footer><div class="wrap">
+  Read more: <a href="../paper/paper.pdf">the paper draft (PDF)</a> · <a href="../../README.md">the repository README</a> · <a href="../ELI5.md">text-only version</a>.
+  The real measurements are loaded from <code>data.js</code>, generated from the project's stored results.
+</div></footer>
+
+<script src="sim.js"></script>
+<script src="data.js"></script>
+<script>
+(function(){
+"use strict";
+const NS="http://www.w3.org/2000/svg", $=(id)=>document.getElementById(id);
+const pct=(x,d=1)=>(100*x).toFixed(d)+"%";
+function svg(tag,attrs,kids){const e=document.createElementNS(NS,tag);for(const k in (attrs||{}))e.setAttribute(k,attrs[k]);(kids||[]).forEach(c=>e.appendChild(typeof c==="object"?c:document.createTextNode(String(c))));return e}
+function seg(host,items,current,onPick,role){host.innerHTML="";items.forEach(([val,label])=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.setAttribute("aria-pressed",String(val===current));b.addEventListener("click",()=>{onPick(val);[...host.children].forEach((c,i)=>c.setAttribute("aria-pressed",String(items[i][0]===val)))});host.appendChild(b)})}
+function bar(label,frac,cls,text,tick){const row=document.createElement("div");row.className="bar";const l=document.createElement("span");l.textContent=label;const t=document.createElement("div");t.className="track";const f=document.createElement("div");f.className="fill "+(cls||"");f.style.width=Math.max(0,Math.min(100,frac*100))+"%";t.appendChild(f);if(tick!=null){const k=document.createElement("div");k.className="tick";k.style.left=Math.min(99.5,tick*100)+"%";k.title="exact answer";t.appendChild(k)}const v=document.createElement("span");v.className="v";v.textContent=text;row.append(l,t,v);return row}
+
+/* ---------- 1. alarm building ---------- */
+let n=5, err=new Array(5).fill(0), fixes=null;
+const sizes=[3,5,7,9];
+function renderBuilding(){
+  const s=$("svg-building"); s.innerHTML=""; const xs=[...Array(n)].map((_,i)=>60+i*(580/(n-1))), y=165, ya=70;
+  const syn=Sim.syndrome(err);
+  syn.forEach((v,j)=>{const mx=(xs[j]+xs[j+1])/2;
+    s.appendChild(svg("line",{class:"wire",x1:xs[j],y1:y,x2:mx,y2:ya+17}));s.appendChild(svg("line",{class:"wire",x1:xs[j+1],y1:y,x2:mx,y2:ya+17}));
+    const g=svg("g",{class:"alarm"+(v?" ring":""),transform:`translate(${mx-17},${ya-17})`},[svg("rect",{width:34,height:34,rx:8}),svg("text",{x:17,y:23,"text-anchor":"middle",style:"font-weight:700;fill:"+(v?"var(--bad)":"var(--muted)")},[v?"!":"·"])]);
+    s.appendChild(g)});
+  s.appendChild(svg("text",{x:6,y:24},["alarms"])); s.appendChild(svg("text",{x:6,y:218},["parts (click one to flip it)"]));
+  err.forEach((v,i)=>{
+    const g=svg("g",{class:"qubit"+(v?" bad":""),tabindex:0,role:"button","aria-pressed":String(!!v),"aria-label":`Part ${i+1}: ${v?"flipped":"fine"}. Press to ${v?"fix":"flip"} it.`,transform:`translate(${xs[i]},${y})`},[svg("circle",{r:22}),svg("text",{class:"bang","text-anchor":"middle",y:6,style:"font-size:18px"},[v?"!":""])]);
+    g.addEventListener("click",()=>toggle(i));g.addEventListener("keydown",(e)=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();toggle(i)}});s.appendChild(g);
+    if(fixes&&fixes[i]){s.appendChild(svg("g",{class:"fix",transform:`translate(${xs[i]},${y})`},[svg("circle",{r:30})]))}
+  });
+  $("n-now").textContent=n;$("k-now").textContent=(n-1)/2;
+}
+function toggle(i){err[i]^=1;fixes=null;$("decode-out").className="result info";$("decode-out").textContent="The alarms changed. Ask the detective when you are ready.";renderBuilding()}
+function setSize(m){n=m;err=new Array(n).fill(0);fixes=null;$("decode-out").className="result info";$("decode-out").textContent="New row. Click a part to flip it.";renderBuilding()}
+function decodeNow(){
+  const o=$("decode-out"); if(!err.some(Boolean)){o.className="result info";o.textContent="Nothing is flipped, so no alarm rings and the detective has nothing to do.";return}
+  const corr=Sim.decode(Sim.syndrome(err),Sim.weights(new Array(n).fill(0.1))); fixes=corr; renderBuilding();
+  const count=corr.reduce((a,b)=>a+b,0), real=err.reduce((a,b)=>a+b,0);
+  if(!Sim.logicalError(err,corr)){o.className="result ok";o.textContent=`Fixed. The detective flipped back ${count} part${count===1?"":"s"} (green dashes) and undid every mistake.`}
+  else{o.className="result bad";o.textContent=`Oops. ${real} parts really flipped, which is more than half the row. The detective's fewest-mistakes story ("only ${count} flipped") was wrong, so the whole row ended up flipped: a logical error. Try fewer mistakes, or a bigger row.`}
+}
+function randomMistakes(){const p=+$("p-chance").value/100;const r=Sim.mulberry32((Math.random()*1e9)|0);err=Sim.sample(new Array(n).fill(p),r);fixes=null;$("decode-out").className="result info";$("decode-out").textContent=`${err.reduce((a,b)=>a+b,0)} part(s) flipped at random. Ask the detective.`;renderBuilding()}
+seg($("size-seg"),sizes.map(v=>[v,String(v)]),5,setSize);
+$("b-clear").onclick=()=>{err=new Array(n).fill(0);fixes=null;$("decode-out").className="result info";$("decode-out").textContent="Cleared. Click a part to flip it.";renderBuilding()};
+$("b-rand").onclick=randomMistakes;$("b-decode").onclick=decodeNow;
+$("p-chance").oninput=()=>{$("p-chance-out").textContent=$("p-chance").value+"%"};
+renderBuilding();
+
+function runMC(){
+  const p=+$("mc-p").value/100, host=$("mc-bars"); host.innerHTML="";
+  sizes.forEach(m=>{const pr=new Array(m).fill(p),f=Sim.failureRate(pr,Sim.weights(pr),5000,1+m);host.appendChild(bar(`${m} parts`,Math.min(1,f*2),"",pct(f),Math.min(1,Sim.majorityFailure(m,p)*2)))});
+  host.appendChild(Object.assign(document.createElement("div"),{className:"note",textContent:"Bars are drawn at twice their value so small numbers stay visible."}));
+}
+$("mc-p").oninput=()=>{$("mc-p-out").textContent=$("mc-p").value+"%"};$("b-mc").onclick=runMC;runMC();
+
+/* ---------- 2. the wrong map ---------- */
+const PRESETS={even:["Everyone equally shaky",()=>new Array(7).fill(0.10)],ends:["Shaky ends",()=>[0.30,0.04,0.04,0.04,0.04,0.04,0.30]],wild:["Very uneven",()=>[0.45,0.30,0.02,0.02,0.02,0.30,0.45]],one:["One bad part",()=>[0.05,0.05,0.05,0.25,0.05,0.05,0.05]],rand:["Random",null]};
+let preset="ends", randSeed=3, calIdx=3; const CAL=[10,100,1000,10000,100000];
+function truep(){if(preset==="rand"){const r=Sim.mulberry32(randSeed);return [...Array(7)].map(()=>{const u=r();return 0.03+0.3*u*u})}return PRESETS[preset][1]()}
+function renderMap(){
+  const p=truep(),s=$("svg-map");s.innerHTML="";const xs=[...Array(7)].map((_,i)=>70+i*93);
+  p.forEach((v,i)=>{const h=v*330;s.appendChild(svg("rect",{x:xs[i]-18,y:120-h,width:36,height:h,rx:5,fill:"var(--warn)",opacity:.85}));s.appendChild(svg("text",{x:xs[i],y:112-h,"text-anchor":"middle"},[Math.round(v*100)+"%"]));s.appendChild(svg("circle",{cx:xs[i],cy:134,r:7,fill:"var(--card)",stroke:"var(--ink)","stroke-width":2}))});
+  const host=$("map-bars");host.innerHTML="";const N=CAL[calIdx],T=30000;
+  const fac=Sim.failureRate(p,Sim.weights(new Array(7).fill(0.1)),T,11), est=Sim.estimateP(p,N,5), red=Sim.failureRate(p,Sim.weights(est),T,11), tru=Sim.failureRate(p,Sim.weights(p),T,11);
+  const top=Math.max(fac,red,tru,1e-3)*1.15;
+  host.append(bar("Factory map (everyone equal)",fac/top,"warn",pct(fac,2)),bar(`Redrawn map (${N.toLocaleString()} examples)`,red/top,"",pct(red,2)),bar("True map (cheating)",tru/top,"ok",pct(tru,2)));
+  const gap=fac-tru, m=$("map-msg");
+  if(gap<0.003){m.textContent=`Here the factory map costs only ${(gap*100).toFixed(2)} percentage points, so there is almost nothing to gain. That is the situation we found in the real experiments.`}
+  else{const rec=Math.max(0,Math.min(1,(fac-red)/gap));m.textContent=`The factory map costs ${(gap*100).toFixed(2)} percentage points. Redrawing the map from ${N.toLocaleString()} examples recovers ${Math.round(rec*100)}% of that.`}
+}
+seg($("preset-seg"),Object.keys(PRESETS).map(k=>[k,PRESETS[k][0]]),preset,(k)=>{preset=k;if(k==="rand")randSeed=1+((Math.random()*1e6)|0);renderMap()});
+$("cal-n").oninput=()=>{calIdx=+$("cal-n").value-1;$("cal-n-out").textContent=CAL[calIdx].toLocaleString();renderMap()};
+renderMap();
+
+/* ---------- 3. the student ---------- */
+const GRID=[10,30,100,300,1000,3000,10000,30000,100000,300000]; let pracCurve=null, pracIdx=1;
+function computePractice(){
+  const tp=new Array(9).fill(0.2),T=30000,oracle=Sim.failureRate(tp,Sim.weights(tp),T,31);
+  pracCurve={oracle,student:[],redrawn:[]};
+  GRID.forEach((N,i)=>{pracCurve.student.push(Sim.tableFailure(Sim.trainTable(tp,N,100+i),tp,T,32));pracCurve.redrawn.push(Sim.failureRate(tp,Sim.weights(Sim.estimateP(tp,N,200+i)),T,32))});
+  renderPractice();
+}
+function renderPractice(){
+  const s=$("svg-prac");s.innerHTML="";if(!pracCurve){return}
+  const L=56,R=20,Tp=16,B=40,W=700,H=280,x=(i)=>L+i*(W-L-R)/(GRID.length-1),ymax=0.55,y=(v)=>Tp+(1-v/ymax)*(H-Tp-B);
+  [0,0.1,0.2,0.3,0.4,0.5].forEach(v=>{s.appendChild(svg("line",{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:"var(--grid)"}));s.appendChild(svg("text",{x:L-8,y:y(v)+4,"text-anchor":"end"},[Math.round(v*100)+"%"]))});
+  GRID.forEach((N,i)=>{if(i%2===0||i===GRID.length-1)s.appendChild(svg("text",{x:x(i),y:H-16,"text-anchor":"middle"},[N>=1000?(N/1000)+"k":N]))});
+  s.appendChild(svg("text",{x:(W+L)/2,y:H-2,"text-anchor":"middle"},["practice examples (log scale)"]));
+  s.appendChild(svg("line",{x1:L,x2:W-R,y1:y(pracCurve.oracle),y2:y(pracCurve.oracle),stroke:"var(--ok)","stroke-dasharray":"5 4","stroke-width":2}));
+  s.appendChild(svg("text",{x:W-R,y:y(pracCurve.oracle)-6,"text-anchor":"end",style:"fill:var(--ok)"},["best possible"]));
+  const path=(arr)=>arr.map((v,i)=>(i?"L":"M")+x(i)+","+y(Math.min(v,ymax))).join(" ");
+  s.appendChild(svg("path",{d:path(pracCurve.student),fill:"none",stroke:"var(--warn)","stroke-width":3}));
+  s.appendChild(svg("path",{d:path(pracCurve.redrawn),fill:"none",stroke:"var(--accent)","stroke-width":3}));
+  s.appendChild(svg("text",{x:x(0)+6,y:y(pracCurve.student[0])-8,style:"fill:var(--warn);font-weight:600"},["student"]));
+  s.appendChild(svg("text",{x:x(4),y:y(pracCurve.redrawn[4])+22,style:"fill:var(--accent);font-weight:600"},["map-redrawing detective"]));
+  s.appendChild(svg("line",{x1:x(pracIdx),x2:x(pracIdx),y1:Tp,y2:H-B,stroke:"var(--ink)","stroke-dasharray":"3 3",opacity:.6}));
+  const h=$("prac-bars");h.innerHTML="";const top=0.55;
+  h.append(bar("Student (learns from examples)",pracCurve.student[pracIdx]/top,"warn",pct(pracCurve.student[pracIdx])),bar("Map-redrawing detective",pracCurve.redrawn[pracIdx]/top,"",pct(pracCurve.redrawn[pracIdx])),bar("Best possible",pracCurve.oracle/top,"ok",pct(pracCurve.oracle)));
+}
+$("prac-n").oninput=()=>{pracIdx=+$("prac-n").value;$("prac-n-out").textContent=GRID[pracIdx].toLocaleString();renderPractice()};
+$("prac-n-out").textContent=GRID[pracIdx].toLocaleString();
+setTimeout(computePractice,30);
+
+/* ---------- 4. the helper ---------- */
+(function demo(){const g=$("demo-alarms"),pos=[[70,60],[130,60],[260,90],[320,90],[470,40],[520,70],[560,40],[500,110],[555,105],[610,80],[90,115],[200,120]];
+  const kind=["ok","ok","ok","ok","tang","tang","tang","tang","tang","tang","none","none"];
+  const col={ok:["var(--ok-soft)","var(--ok)"],tang:["var(--warn-soft)","var(--warn)"]};
+  [[0,1],[2,3]].forEach(([a,b])=>g.appendChild(svg("line",{x1:pos[a][0],y1:pos[a][1],x2:pos[b][0],y2:pos[b][1],stroke:"var(--ok)","stroke-width":4})));
+  pos.forEach((p,i)=>{if(kind[i]==="none")return;g.appendChild(svg("rect",{x:p[0]-14,y:p[1]-14,width:28,height:28,rx:7,fill:col[kind[i]][0],stroke:col[kind[i]][1],"stroke-width":2.5}));g.appendChild(svg("text",{x:p[0],y:p[1]+5,"text-anchor":"middle",style:"font-weight:700;fill:"+col[kind[i]][1]},["!"]))});
+})();
+const E9=window.RESULTS.e9; const hp=$("h-p"); E9.p.forEach(v=>hp.add(new Option(String(v),String(v)))); hp.value="0.002";
+function sureLabel(t){return t>=0.99?(t*100).toFixed(t===0.999?1:1)+"%":Math.round(t*100)+"%"}
+function renderHelper(){
+  const p=hp.value, ti=+$("h-tau").value, tau=E9.taus[ti], cell=E9.sweep[p][String(tau)];
+  $("h-tau-out").textContent=sureLabel(tau);
+  $("h-removed").textContent=pct(cell.removed,0); $("h-ratio").textContent=pct(cell.ratio,0);
+  $("h-ratio-t").textContent=cell.ratio<=1.0?"mistakes compared with the classic detective alone (fewer!)":cell.ratio<=1.05?"mistakes compared with the classic detective alone (about the same)":"mistakes compared with the classic detective alone (worse)";
+  const s=$("svg-helper");s.innerHTML="";const L=56,R=20,Tp=14,B=44,W=700,H=270,xmax=1,ymin=0.9,ymax=Math.max(1.7,...E9.taus.map(t=>E9.sweep[p][String(t)].ratio))+0.02;
+  const x=(v)=>L+v/xmax*(W-L-R),y=(v)=>Tp+(1-(v-ymin)/(ymax-ymin))*(H-Tp-B);
+  for(let v=1.0;v<=ymax;v+=0.2)s.appendChild(svg("g",{},[svg("line",{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:"var(--grid)"}),svg("text",{x:L-8,y:y(v)+4,"text-anchor":"end"},[Math.round(v*100)+"%"])]));
+  [0,0.25,0.5,0.75,1].forEach(v=>s.appendChild(svg("text",{x:x(v),y:H-24,"text-anchor":"middle"},[Math.round(v*100)+"%"])));
+  s.appendChild(svg("text",{x:(W+L)/2,y:H-6,"text-anchor":"middle"},["share of ringing alarms cleared by the helper"]));
+  s.appendChild(svg("line",{x1:L,x2:W-R,y1:y(1),y2:y(1),stroke:"var(--ink)","stroke-width":1.5,opacity:.6}));
+  s.appendChild(svg("text",{x:W-R,y:y(1)-6,"text-anchor":"end"},["same as classic detective alone"]));
+  const pts=E9.taus.map(t=>E9.sweep[p][String(t)]).sort((a,b)=>a.removed-b.removed);
+  s.appendChild(svg("path",{d:pts.map((c,i)=>(i?"L":"M")+x(c.removed)+","+y(c.ratio)).join(" "),fill:"none",stroke:"var(--accent)","stroke-width":3}));
+  pts.forEach(c=>s.appendChild(svg("circle",{cx:x(c.removed),cy:y(c.ratio),r:4,fill:"var(--accent)"})));
+  s.appendChild(svg("circle",{cx:x(cell.removed),cy:y(cell.ratio),r:9,fill:"none",stroke:cell.ratio<=1.05?"var(--ok)":"var(--bad)","stroke-width":3.5}));
+  const tb=$("h-table");tb.innerHTML="";E9.taus.forEach((t,i)=>{const c=E9.sweep[p][String(t)],tr=document.createElement("tr");if(i===ti)tr.className="sel";tr.innerHTML=`<td>${sureLabel(t)}</td><td>${pct(c.removed,0)}</td><td>${pct(c.ratio,0)}</td>`;tr.tabIndex=0;tr.onclick=()=>{$("h-tau").value=i;renderHelper()};tr.onkeydown=(e)=>{if(e.key==="Enter"){tr.onclick()}};tb.appendChild(tr)});
+  const a=$("h-arms");a.innerHTML="";const key="7,"+p;
+  [["A","Too eager (helper must be 70% sure)","bad"],["B","Pickier (95% sure)","ok"]].forEach(([k,label,cls])=>{const c=E9.arms[k][key];a.appendChild(bar(label,Math.min(1,c.ratio/1.7),cls==="ok"&&c.ratio<=1.05?"ok":(c.ratio>1.05?"bad":"ok"),`${pct(c.ratio,1)} · cleared ${pct(c.removed,0)}`,1/1.7))});
+  a.appendChild(Object.assign(document.createElement("div"),{className:"note",textContent:"Bars show mistakes relative to the classic detective alone; the tick marks 100%."}));
+}
+$("h-tau").oninput=renderHelper;hp.onchange=renderHelper;renderHelper();
+
+/* ---------- 5. results explorer ---------- */
+const R=window.RESULTS, EXP={e1:["Same noise everywhere (E1)",R.e1],e6:["Linked mistakes: crosstalk (E6)",R.e6],e9:["The helper (E9b)",null]}; let exp="e1";
+const NAMES={naive:"Factory-map detective",calibrated:"Map-redrawing detective",oracle:"True-map detective",correlated:"Detective that knows about linked mistakes",oracle_corr:"Linked-mistakes detective with the true map",gnn:"The student (neural network)"};
+function fillP(){const sel=$("r-p"),prev=sel.value;sel.innerHTML="";const list=exp==="e9"?R.e9.p:EXP[exp][1].p;list.forEach(v=>sel.add(new Option(String(v),String(v))));sel.value=list.map(String).includes(prev)?prev:String(list[Math.min(1,list.length-1)])}
+function renderResults(){
+  const d=$("r-d").value,p=$("r-p").value,host=$("r-bars");host.innerHTML="";const note=$("r-note");
+  if(exp==="e9"){
+    const key=d+","+p;[["A","Helper, 70% sure"],["B","Helper, 95% sure"]].forEach(([k,label])=>{const c=R.e9.arms[k][key];host.appendChild(bar(label,Math.min(1,c.ratio/1.6),c.ratio<=1.0?"ok":(c.ratio<=1.05?"":"bad"),`${pct(c.ratio,1)} · cleared ${pct(c.removed,0)}`,1/1.6))});
+    host.appendChild(Object.assign(document.createElement("div"),{className:"note",textContent:"Helper + classic detective compared with the classic detective alone (100%, the tick). Distance 7 was never seen in practice."}));
+    note.textContent=d==="7"?"Distance 7: the 70% helper is too eager at low error rates, the 95% helper is as good or slightly better.":"Where the helper practised (distance 3 and 5) the 70% helper gives the biggest gain; the pickier 95% helper gains less.";return}
+  const cell=EXP[exp][1].ler[d+","+p]; if(!cell){host.textContent="No data for this combination.";return}
+  const order=Object.keys(NAMES).filter(k=>cell[k]!=null),base=cell.naive,mx=Math.max(...order.map(k=>cell[k]/base),1)*1.05;
+  order.forEach(k=>host.appendChild(bar(NAMES[k],(cell[k]/base)/mx,k==="gnn"?"warn":(k==="naive"?"gray":""),`${Math.round(100*cell[k]/base)}% (${cell[k].toExponential(1)})`)));
+  const best=order.reduce((a,b)=>cell[b]<cell[a]?b:a,order[0]);
+  note.textContent=`Lowest error here: ${NAMES[best]}. Numbers in brackets are mistakes per round of the machine. ${exp==="e6"&&d==="3"?"The linked-mistakes detective with the true map is missing at distance 3 (a bookkeeping limit explained in the paper).":""}`;
+}
+seg($("exp-seg"),Object.keys(EXP).map(k=>[k,EXP[k][0]]),exp,(k)=>{exp=k;fillP();renderResults()});
+$("r-d").onchange=renderResults;$("r-p").onchange=renderResults;fillP();renderResults();
+})();
+</script>
+</body>
+</html>

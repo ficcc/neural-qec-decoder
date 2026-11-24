@@ -2,6 +2,8 @@
 
 *(Or: like you're a curious person who has never heard of quantum computers.)*
 
+> Prefer to play with it? Open [`eli5/index.html`](eli5/index.html) in a browser for the interactive version.
+
 ## The problem: quantum computers make a LOT of mistakes
 
 A quantum computer is built from tiny parts called **qubits**. They're so delicate that a bit of heat or a stray signal can ruin them. A normal computer rarely makes mistakes. A quantum computer makes them constantly.
