@@ -135,3 +135,14 @@ tests/                 label correctness, candidate construction, conflict resol
 **Confirmation criterion (the same rule as E9):** `classify_result(ratio, removed_fraction)` at d = 7, p = 0.002 with ratio = mean over the three d ∈ {3,5}-trained seeds. *Positive* → the hypothesis is confirmed; *partial* or *negative* → not confirmed. Everything else (ratios at all d and p, paired tests, whether the in-distribution gains at d = 3, 5 survive the stricter τ′) is descriptive.
 
 **No other changes.** Any deviation from this section will be reported as one.
+
+### 11.1 Amendment — recorded after the validation step and before any fresh test shot
+
+The pre-registered rule selected **τ′ = 0.7** (`results/e9b_tau.json`, committed in the previous commit): on fresh d = 5 validation shots τ = 0.7 stays within a ratio of 1.02 at every error rate (0.95–0.96), so the rule did not tighten the threshold. The d = 5 validation data cannot reveal the d = 7, low-p behaviour that motivated the test, so running only that arm would merely repeat E9 on new shots.
+
+**A second arm is therefore added before any fresh test shot is run:** a **fixed τ = 0.95**, a value taken from the exploratory E9 sweep (disclosed: it was not selected on validation data). Both arms are evaluated on the same fresh test shots (`test_seed` chunks from offset 1000) with the same decoders, budget and success criterion (`classify_result` at d = 7, p = 0.002, mean over the three d ∈ {3,5}-trained seeds). The two arms are reported with equal prominence:
+
+- **Arm A (pre-registered rule): τ′ = 0.7.** Expected, from E9, to remain *partial*; a replication on fresh shots.
+- **Arm B (fixed τ = 0.95, added by this amendment):** *positive* confirms that a stricter threshold lets the pre-decoder transfer to d = 7; *partial* or *negative* does not.
+
+No other change. Any further deviation will be reported as one.
