@@ -17,6 +17,7 @@ The original hypothesis was that a decoder trained only on syndromes, which lear
 | The GNN needs about 100× more data than calibrated matching (10⁶ vs 10⁴ shots), and a Python/PyTorch decoder is 100–1000× above the ~1 µs/round hardware budget. | E4, E5 |
 | Adapting to drift with few new shots: **inconclusive**, because the drift was too weak to create a gap. | E7 |
 | Warm-starting the d = 7 GNN from d = 3,5 weights lowers its test error by ~15%, but it stays ~1.8× worse than matching. | E8 |
+| A local GNN pre-decoder (removes 70–90% of fired detectors, then matching) beats matching by 3–10% at d = 3, 5, but zero-shot at d = 7 it is worse at low error rates: pre-registered verdict *partial*. A stricter threshold looks sufficient post hoc (unconfirmed), and the Python implementation is 10–25× slower than matching. | E9 |
 
 So this is mostly a **negative result with one clean positive** (small-distance crosstalk). The d = 7 failure is a statement about *this GNN under this training budget*, not about neural decoders in general (see Limitations).
 
@@ -161,6 +162,34 @@ Test-set per-round LER at d = 7 (S0; GNNs: mean ± std over 3 seeds, the d = 5 s
 
 Warm starting **helps consistently but not enough**: on average the test error is 15% lower than from scratch (24% at p = 0.002, 8% at p = 0.006), all three warm seeds beat all three scratch seeds, and the warm runs need 7 500–9 500 steps to reach the scratch runs' best validation score (about a quarter fewer). The warm-started GNN is still 1.8× worse than naive matching and 2.9× worse than correlated matching, so initialisation is not the main obstacle at d = 7. Together with the failed 8-layer ablation, this points at the model's limited view of a d = 7 code (four message-passing rounds over eight neighbours per detector), which is untested.
 
+### E9: neural pre-decoder + matching
+
+![E9](figures/e9_ratio_vs_distance.png)
+
+A different way to combine the two: a *local* GNN removes the easy faults and matching decodes what is left. Stim's fault sampler says exactly which faults fired in each shot. A fault is **isolated** if no other fired fault touches either of its detectors, which makes it the unambiguous explanation of those detectors. The pre-decoder scores every candidate (a pair of fired detectors that is a matching edge, or a fired detector with a boundary edge) as isolated or not, removes those scored at least τ (no detector used twice), applies the removed faults' logical labels, and hands the residual syndrome to the **same matching graph and weights as the baseline**. Same 134k-parameter architecture and training recipe as the GNN; three seeds trained on d = 3 and 5, one reference trained at d = 7 (design: `docs/design/2026-11-24-neural-predecoder-design.md`).
+
+The test protocol was fixed before any test shot: τ chosen on **d = 5 validation shots only** (τ = 0.7, committed before the test run, in the commit titled "exp: E9 threshold tau=0.7 chosen on d=5 validation shots only") and applied unchanged at every distance, and a decision rule stated in advance: *positive* if at d = 7 zero-shot the error ratio is ≤ 1.05 **and** ≥ 30% of fired detectors are removed at p = 0.002.
+
+Ratio of logical error rate, pre-decoder + matching over matching alone, on identical shots (mean ± std over 3 seeds; below 1 is better) and the fraction of fired detectors removed:
+
+| p | d = 3 | d = 5 | d = 7 (zero-shot) | removed (d = 3 / 5 / 7) |
+|---|---|---|---|---|
+| 0.002 | 0.933 ± 0.002 | 0.917 ± 0.017 | **1.462 ± 0.016** | 88% / 90% / 88% |
+| 0.003 | 0.940 ± 0.003 | 0.905 ± 0.006 | 1.277 ± 0.019 | 85% / 86% / 83% |
+| 0.004 | 0.956 ± 0.002 | 0.944 ± 0.003 | 1.109 ± 0.016 | 82% / 81% / 78% |
+| 0.005 | 0.968 ± 0.001 | 0.951 ± 0.004 | 1.019 ± 0.008 | 79% / 76% / 72% |
+| 0.006 | 0.969 ± 0.003 | 0.964 ± 0.006 | 1.007 ± 0.003 | 76% / 71% / 67% |
+
+**Verdict under the pre-registered rule: partial.** At d = 7, p = 0.002 (700 000 shots, 1 076 matching errors) 88% of fired detectors are removed (bar: 30%, met) but the error ratio is 1.46 (bar: 1.05, not met; paired test p ≈ 1e-40).
+
+- **Where it was trained it beats matching** while removing 71–90% of the detectors. At d = 3 every paired comparison has p < 1e-11; at d = 5 the gain is significant from p = 0.004 upward and marginal at p = 0.002 (p between 0.005 and 0.06 across seeds).
+- **At d = 7 it gets worse as the error rate falls**, and the d = 7-trained reference does too (ratio 1.30 at p = 0.002, 1.02 at p = 0.004, 0.96 at p = 0.006), so this is not only a transfer failure.
+- **Removal precision is not the problem:** at τ = 0.7 the fraction of removed faults that were truly isolated is 0.925–0.967 and no lower at d = 7 than at d = 3 (recall of isolated faults 0.77–0.88). My working explanation, which I have **not tested**, is that matching's own logical failures become extremely rare at d = 7 and low p, so a few percent of wrong removals dominate.
+- **The threshold was probably too aggressive.** *Exploratory, on test shots already seen, so it does not change the verdict:* at d = 7, p = 0.002 a threshold of 0.95 gives ratio 0.993 while removing 64% of fired detectors, and 0.98 gives 0.977 at 44%; the ratio only rises above 1 beyond roughly 70% removal (`figures/e9_tradeoff_d7.png`). The validation set that chose τ = 0.7 pooled errors across error rates, so p = 0.006 carried about 70% of the weight. Whether a stricter rule passes on fresh shots is **not yet confirmed**.
+- **Speed is a net loss as implemented.** Matching on the residual is 3–5× faster than on the full syndrome (e.g. 1.7 vs 6.2 µs per shot at d = 7, p = 0.002), but the Python pre-decoder costs 45–402 µs per shot (inference plus the removal step) against 2–19 µs for matching alone, so the combination is **10–25× slower than matching on a CPU** (`results/e9_diag.json`). This says nothing about a hardware implementation.
+
+![E9 trade-off](figures/e9_tradeoff_d7.png)
+
 ### E5: latency
 
 Median microseconds per round (graph build + forward for the GNN), p = 0.004, S0:
@@ -179,6 +208,7 @@ Superconducting hardware needs roughly **1 µs per round**. Matching in C++ (PyM
 - **The mismatch hypothesis had little headroom**: with these noise strengths (σ = 0.5, 3 bad couplers at 8×, drift δ = 0.3), calibrated matching nearly closes the gap by itself. Stronger or differently structured mismatch might show more.
 - Error bars in E2 are standard deviations over only 3 device instances; many differences there are within them.
 - Simulated Pauli noise only: **no leakage, erasure or real hardware data**. One code family and one memory basis (Z).
+- The E9 threshold-sweep result (a stricter τ would pass at d = 7) comes from shots that had already been seen, so it is a hypothesis, not a confirmed result.
 - Test shots are not bit-identical across machines, so re-running an experiment elsewhere can move individual points by a few percent (sampling noise); compare runs with `scripts/compare_runs.py` and judge changes against the stated intervals.
 - Latency is measured in Python on CPU and a single GPU; it says nothing about FPGA/ASIC feasibility.
 

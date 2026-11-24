@@ -1,0 +1,73 @@
+{
+ "tau": 0.7,
+ "precision_recall": {
+  "d3_p0.002": {
+   "precision": 0.9531084716051621,
+   "recall": 0.8447763193142245,
+   "removed_frac": 0.881149047990601
+  },
+  "d3_p0.004": {
+   "precision": 0.9249243876464324,
+   "recall": 0.7754223063462019,
+   "removed_frac": 0.8197296954731738
+  },
+  "d5_p0.002": {
+   "precision": 0.9630866756064854,
+   "recall": 0.8828888733673256,
+   "removed_frac": 0.902841495189684
+  },
+  "d5_p0.004": {
+   "precision": 0.9361453095196809,
+   "recall": 0.7859419687673443,
+   "removed_frac": 0.8041304909659903
+  },
+  "d7_p0.002": {
+   "precision": 0.9666400078510025,
+   "recall": 0.8719697586389352,
+   "removed_frac": 0.8790140117402885
+  },
+  "d7_p0.004": {
+   "precision": 0.9394848324509047,
+   "recall": 0.7735908537658173,
+   "removed_frac": 0.7760069918616769
+  }
+ },
+ "timing_us_per_shot": {
+  "d5_p0.002": {
+   "matching_full": 2.122620000045572,
+   "matching_residual": 0.4329799998231465,
+   "predecoder_inference": 44.896719999997,
+   "removal": 3.9799949998268858,
+   "predecoder_total": 48.87671499982389,
+   "fired_per_shot": 6.13975,
+   "residual_per_shot": 0.5964
+  },
+  "d5_p0.004": {
+   "matching_full": 5.313569999998435,
+   "matching_residual": 1.6894000000320375,
+   "predecoder_inference": 119.43592999996326,
+   "removal": 8.104065000043192,
+   "predecoder_total": 127.53999500000646,
+   "fired_per_shot": 11.6917,
+   "residual_per_shot": 2.27285
+  },
+  "d7_p0.002": {
+   "matching_full": 6.23699999996461,
+   "matching_residual": 1.6764250000051106,
+   "predecoder_inference": 184.26730500013946,
+   "removal": 11.650190000000293,
+   "predecoder_total": 195.91749500013975,
+   "fired_per_shot": 18.01915,
+   "residual_per_shot": 2.182
+  },
+  "d7_p0.004": {
+   "matching_full": 18.58800499994686,
+   "matching_residual": 6.605449999915436,
+   "predecoder_inference": 401.6755700000431,
+   "removal": 21.814534999975876,
+   "predecoder_total": 423.49010500001896,
+   "fired_per_shot": 34.14635,
+   "residual_per_shot": 7.63155
+  }
+ }
+}

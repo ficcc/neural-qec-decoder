@@ -8,3 +8,7 @@ Documents/
 checkpoints_local_d3.out
 _pull/
 logs/
+e6_rerun.log
+e8_eval.log
+e9_*.log
+pipeline.log
