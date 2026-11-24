@@ -13,3 +13,7 @@ e8_eval.log
 e9_*.log
 pipeline.log
 e9b_*.log
+docs/paper/*.aux
+docs/paper/*.log
+docs/paper/*.out
+docs/paper/*.toc

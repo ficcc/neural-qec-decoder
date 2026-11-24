@@ -2,7 +2,7 @@
 
 A graph neural network (GNN) decoder, benchmarked against minimum-weight perfect matching (MWPM, via PyMatching) on rotated surface-code memory experiments at distances d = 3, 5, 7, under circuit-level noise that the decoder was **not** told about.
 
-**Author:** Uhenraj Jarga Magar. **Status:** complete benchmark (experiments E1–E9b); all numbers below are generated from `results/*.jsonl` by the code in this repo, and every run is recorded in `runs/`.
+**Author:** Uhenraj Jarga Magar. A paper draft is in `docs/paper/` and a plain-language explanation in `docs/ELI5.md`. **Status:** complete benchmark (experiments E1–E9b); all numbers below are generated from `results/*.jsonl` by the code in this repo, and every run is recorded in `runs/`.
 
 ## TL;DR
 
@@ -17,7 +17,7 @@ The original hypothesis was that a decoder trained only on syndromes, which lear
 | The GNN needs about 100× more data than calibrated matching (10⁶ vs 10⁴ shots), and a Python/PyTorch decoder is 100–1000× above the ~1 µs/round hardware budget. | E4, E5 |
 | Adapting to drift with few new shots: **inconclusive**, because the drift was too weak to create a gap. | E7 |
 | Warm-starting the d = 7 GNN from d = 3,5 weights lowers its test error by ~15%, but it stays ~1.8× worse than matching. | E8 |
-| A local GNN pre-decoder (removes 30–90% of fired detectors, then matching) beats matching by 3–10% at d = 3, 5. Zero-shot at d = 7 it fails at the validation-chosen threshold (pre-registered verdict *partial*), but **a stricter fixed threshold (0.95) was confirmed on fresh shots**: ratio 0.98 while removing 63%. The Python implementation is 10–25× slower than matching. | E9, E9b |
+| A local GNN pre-decoder (removes 30–90% of fired detectors, then matching) beats matching by 3–10% at d = 3, 5. Zero-shot at d = 7 it fails at the validation-chosen threshold (pre-registered verdict *partial*), but **a stricter fixed threshold (0.95) was confirmed on fresh shots**: ratio 0.98 while removing 63%. The Python implementation is 23–31× slower than matching. | E9, E9b |
 
 So this is mostly a **negative result with one clean positive** (small-distance crosstalk). The d = 7 failure is a statement about *this GNN under this training budget*, not about neural decoders in general (see Limitations).
 
@@ -175,7 +175,7 @@ Ratio of logical error rate, pre-decoder + matching over matching alone, on iden
 | p | d = 3 | d = 5 | d = 7 (zero-shot) | removed (d = 3 / 5 / 7) |
 |---|---|---|---|---|
 | 0.002 | 0.933 ± 0.002 | 0.917 ± 0.017 | **1.462 ± 0.016** | 88% / 90% / 88% |
-| 0.003 | 0.940 ± 0.003 | 0.905 ± 0.006 | 1.277 ± 0.019 | 85% / 86% / 83% |
+| 0.003 | 0.940 ± 0.003 | 0.905 ± 0.006 | 1.277 ± 0.019 | 85% / 85% / 83% |
 | 0.004 | 0.956 ± 0.002 | 0.944 ± 0.003 | 1.109 ± 0.016 | 82% / 81% / 78% |
 | 0.005 | 0.968 ± 0.001 | 0.951 ± 0.004 | 1.019 ± 0.008 | 79% / 76% / 72% |
 | 0.006 | 0.969 ± 0.003 | 0.964 ± 0.006 | 1.007 ± 0.003 | 76% / 71% / 67% |
@@ -186,7 +186,7 @@ Ratio of logical error rate, pre-decoder + matching over matching alone, on iden
 - **At d = 7 it gets worse as the error rate falls**, and the d = 7-trained reference does too (ratio 1.30 at p = 0.002, 1.02 at p = 0.004, 0.96 at p = 0.006), so this is not only a transfer failure.
 - **Removal precision is not the problem:** at τ = 0.7 the fraction of removed faults that were truly isolated is 0.925–0.967 and no lower at d = 7 than at d = 3 (recall of isolated faults 0.77–0.88). My working explanation, which I have **not tested**, is that matching's own logical failures become extremely rare at d = 7 and low p, so a few percent of wrong removals dominate.
 - **The threshold was too aggressive for d = 7.** *Exploratory, on test shots already seen, so it does not change the verdict:* at d = 7, p = 0.002 a threshold of 0.95 gives ratio 0.993 while removing 64% of fired detectors, and 0.98 gives 0.977 at 44%; the ratio only rises above 1 beyond roughly 70% removal (`figures/e9_tradeoff_d7.png`). The validation set that chose τ = 0.7 pooled errors across error rates, so p = 0.006 carried about 70% of the weight. **This was then confirmed on fresh shots (E9b, below).**
-- **Speed is a net loss as implemented.** Matching on the residual is 3–5× faster than on the full syndrome (e.g. 1.7 vs 6.2 µs per shot at d = 7, p = 0.002), but the Python pre-decoder costs 45–402 µs per shot (inference plus the removal step) against 2–19 µs for matching alone, so the combination is **10–25× slower than matching on a CPU** (`results/e9_diag.json`). This says nothing about a hardware implementation.
+- **Speed is a net loss as implemented.** Matching on the residual is 3–5× faster than on the full syndrome (e.g. 1.7 vs 6.2 µs per shot at d = 7, p = 0.002), but the Python pre-decoder costs 45–402 µs per shot (inference plus the removal step) against 2–19 µs for matching alone, so the combination is **23–31× slower than matching on a CPU** (`results/e9_diag.json`). This says nothing about a hardware implementation.
 
 ![E9 trade-off](figures/e9_tradeoff_d7.png)
 
@@ -216,7 +216,7 @@ Same success criterion as E9: positive if at d = 7, p = 0.002 the mean-over-seed
 - **The d = 7-trained reference** at τ = 0.95 has ratio 0.924 at p = 0.002 (73% removed) and 0.93–0.96 at higher p, so training at d = 7 helps a little further.
 - **The strict threshold costs in-distribution gain.** At τ = 0.95 the d = 3 gain disappears (ratio 0.998–1.000, 27–50% removed, against 0.94–0.975 at τ = 0.7) and the d = 5 gain shrinks to 0.96–0.99. No single τ is best everywhere: 0.7 gives more where it was trained, 0.95 is the safe choice for transfer.
 
-Caveats: the value 0.95 and the idea of the test came from looking at E9's test shots, so although τ was fixed before and the shots are fresh, this is not an independent discovery (disclosed in the pre-registration); only one τ was tested; S0 noise and d ≤ 7 only; and the speed problem from E9 remains (the Python pre-decoder is 10–25× slower than matching, and at τ = 0.95 fewer detectors are removed, so matching saves less).
+Caveats: the value 0.95 and the idea of the test came from looking at E9's test shots, so although τ was fixed before and the shots are fresh, this is not an independent discovery (disclosed in the pre-registration); only one τ was tested; S0 noise and d ≤ 7 only; and the speed problem from E9 remains (the Python pre-decoder is 23–31× slower than matching, and at τ = 0.95 fewer detectors are removed, so matching saves less).
 
 ### E5: latency
 
@@ -245,7 +245,7 @@ Superconducting hardware needs roughly **1 µs per round**. Matching in C++ (PyM
 ```bash
 uv venv --python 3.12 && .venv/Scripts/activate           # Windows; use bin/activate elsewhere
 uv pip install stim pymatching sinter torch numpy matplotlib pytest
-python -m pytest                                           # 154 tests, ~40 s
+python -m pytest                                           # 156 tests, ~40 s
 
 # GNN decoder (E1-E8): train, then evaluate. Every evaluation script takes --shard i/n.
 python -m experiments.train_jobs --device cuda             # all 59 GNN training jobs, resumable
@@ -292,6 +292,8 @@ experiments/        jobs.py (all training jobs), e1 ... e9 scripts
 scripts/            record_run, compare_runs, README assets, cloud drivers
 results/ runs/      raw results; recorded runs (v1 ... v5) with environment and metrics
 figures/            plots used in this README
+docs/paper/         paper draft (LaTeX + PDF; tables generated from results) and build notes
+docs/ELI5.md        the project explained in plain language
 docs/design/        design documents (with the E9/E9b pre-registration)
 ```
 
