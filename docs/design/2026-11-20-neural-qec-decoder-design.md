@@ -38,7 +38,7 @@ This is the second portfolio project for PhD applications to Monash (Scalable Qu
 
 - **Time:** 2–3 weeks. The visa expires in late March 2027, so polish matters more than breadth.
 - **Compute:** local torch is CPU-only (2.15.0+cpu). Develop and run d = 3, 5 locally. Use a RunPod GPU only if d = 7 training is impractically slow on CPU, and record the GPU type and hours used.
-- **Environment:** a new sibling repo at `G:\Research\neural-qec-decoder`. Use `uv venv --python 3.12`, because the `py -3.12` launcher is broken on this machine. Run things as `python -m experiments.<name>` from the repo root, mirroring the first project.
+- **Environment:** a new repository. Use `uv venv --python 3.12`, because the `py -3.12` launcher is broken on this machine. Run things as `python -m experiments.<name>` from the repo root, mirroring the first project.
 - **Dependencies:** stim, pymatching, sinter, torch, numpy, matplotlib. **No PyTorch Geometric** (my call: Windows wheels for this torch version are unreliable). Message passing is written in plain torch with `index_add_` / `scatter_reduce`.
 - **Commits:** authored by the project author only.
 

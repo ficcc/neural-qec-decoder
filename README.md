@@ -2,7 +2,7 @@
 
 A graph neural network (GNN) decoder, benchmarked against minimum-weight perfect matching (MWPM, via PyMatching) on rotated surface-code memory experiments at distances d = 3, 5, 7, under circuit-level noise that the decoder was **not** told about.
 
-**Author:** Uhenraj Jarga Magar. **Status:** complete benchmark; all numbers below are generated from `results/*.jsonl` by the code in this repo.
+**Author:** Uhenraj Jarga Magar. **Status:** complete benchmark (experiments E1–E9b); all numbers below are generated from `results/*.jsonl` by the code in this repo, and every run is recorded in `runs/`.
 
 ## TL;DR
 
@@ -245,18 +245,33 @@ Superconducting hardware needs roughly **1 µs per round**. Matching in C++ (PyM
 ```bash
 uv venv --python 3.12 && .venv/Scripts/activate           # Windows; use bin/activate elsewhere
 uv pip install stim pymatching sinter torch numpy matplotlib pytest
-python -m pytest                                           # 76 tests, ~25 s
+python -m pytest                                           # 154 tests, ~40 s
 
+# GNN decoder (E1-E8): train, then evaluate. Every evaluation script takes --shard i/n.
 python -m experiments.train_jobs --device cuda             # all 59 GNN training jobs, resumable
-# evaluation: each script takes --shard i/n to split points across processes
+python -m experiments.train_jobs --warmstart --device cuda # E8: d=7 warm-start jobs
 python -m experiments.e1_control --shard 0/27              # ...and likewise e2_mismatch, e3_generalise,
-python -m experiments.e4_budget --shard 0/12               #    e4_budget, e6_crosstalk, e7_drift_adapt
+python -m experiments.e4_budget --shard 0/12               #    e4_budget, e6_crosstalk, e7_drift_adapt, e8_warmstart
 python -m experiments.e1_control --plot                    # merge shards -> results/*.jsonl and figures
 python -m experiments.e5_latency --device cuda             # and --device cpu
+
+# Pre-decoder (E9, E9b): train, choose tau on validation shots, then test on fresh shots
+python -m experiments.train_jobs --predecoder --device cuda
+python -m experiments.e9_predecoder --select-tau           # writes results/e9_tau.json (commit it BEFORE testing)
+python -m experiments.e9_predecoder --shard 0/5            # ...for shards 0..4, then:
+python -m experiments.e9_predecoder --plot --diag          # figures, paired tests, verdict, timing
+python -m experiments.e9_predecoder --confirm-select       # E9b: pre-registered rule on fresh validation shots
+python -m experiments.e9_predecoder --confirm-shard 0/5    # ...for shards 0..4, then --confirm-plot
+
+# Record a run (environment, commit, configs, tests, all metrics) and compare two runs
+python -m scripts.record_run --label NAME --run-tests --notes "what changed"
+python -m scripts.compare_runs runs/A runs/B --min-rel 0.05
 python -m scripts.make_readme_assets                       # clean figures and the tables above
 ```
 
-All 59 training jobs plus the ablation took about 4 hours of pod time on one RTX 4090 (≈ US$3 on RunPod Secure Cloud); evaluation ran on the same machine's CPUs. `scripts/pod_run.sh` and `scripts/pod_pipeline.sh` are the unattended cloud drivers. `checkpoints/` (43 MB) is git-ignored. `results/raw/` holds per-shard outputs.
+**You do not need to retrain to inspect the results:** every number in this README comes from the files in `results/` (raw per-shot and per-point outputs) and `runs/` (one folder per recorded run with its environment and metrics); `scripts.make_readme_assets` regenerates the tables from them. Trained checkpoints (about 47 MB) are not in the repository (git-ignored), so reproducing the models means rerunning the training commands above.
+
+Compute used: the 59 GNN jobs plus the ablation took about 4 hours of pod time on one RTX 4090 (about US$3 on RunPod Secure Cloud); E8 (four 16-minute runs in parallel) cost about US$0.58 and E9 (the longest of its four runs took 33 minutes) about US$0.71, both including pod start-up. All evaluation, E9b included, ran on a local CPU. `scripts/pod_run.sh` and `scripts/pod_pipeline.sh` are the unattended cloud drivers.
 
 ## Layout
 
@@ -264,12 +279,20 @@ All 59 training jobs plus the ablation took about 4 hours of pod time on one RTX
 src/noise.py        per-qubit/gate noise insertion, SI1000, crosstalk
 src/scenarios.py    S0-S4 and seeded device instances
 src/calibrate.py    p_ij estimator -> re-weighted matching
+src/dem_tools.py    matching graphs that keep logical labels on parallel edges
 src/graph.py        syndrome -> k-nearest-neighbour graph batches
 src/gnn.py          plain-torch message-passing decoder
 src/train.py        on-the-fly training, early stopping, fine-tuning
-src/evaluate.py     shared-shot evaluation, Wilson intervals, Λ fit
-experiments/        jobs.py (all training jobs), e1 ... e7 scripts
-docs/design/        design documents
+src/dem_labels.py   fault-level labels from Stim's fault sampler (isolated faults)
+src/predecoder.py   pre-decoder network, fault removal, pre-decoded matching
+src/train_pd.py     pre-decoder training
+src/evaluate.py     shared-shot evaluation, Wilson and paired tests, per-shot errors
+src/runlog.py       run recorder and comparer
+experiments/        jobs.py (all training jobs), e1 ... e9 scripts
+scripts/            record_run, compare_runs, README assets, cloud drivers
+results/ runs/      raw results; recorded runs (v1 ... v5) with environment and metrics
+figures/            plots used in this README
+docs/design/        design documents (with the E9/E9b pre-registration)
 ```
 
 ## License
