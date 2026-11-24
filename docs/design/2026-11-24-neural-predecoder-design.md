@@ -121,3 +121,17 @@ tests/                 label correctness, candidate construction, conflict resol
 - The positive-class weight; k for the kNN graph if recall of true pairs is low (measure first); optimizer settings; plot styling.
 - Whether to add a second training distance mix if d = 5 alone transfers poorly (report both).
 - Whether S4/S2 are run (secondary, only after the primary and only after approval of any further GPU spend).
+
+## 11. Confirmatory test E9b — pre-registered 2026-11-24, after the E9 results were known
+
+**Disclosure.** E9's pre-registered verdict was *partial*: at d = 7 zero-shot, p = 0.002 the pre-decoder removed 88% of fired detectors but had 1.46× matching's logical error rate. A post-hoc sweep of the threshold on the E9 test shots suggested that a stricter τ (≥ 0.95) would meet both bars. E9b tests that hypothesis. The *rule* below was designed after seeing that exploratory result, so a positive outcome supports the hypothesis but is not independent of that history. τ is chosen and tested on data that were not used before.
+
+**Models:** the same four trained models; no retraining.
+
+**New threshold rule.** On **fresh** d = 5 validation shots (circuit sampler, `val_seed(600..602)`, 100 000 shots at each of p = 0.002, 0.004, 0.006, paired with matching on the same shots), for each τ in the grid and each p compute the ratio pre-decoder-errors ÷ matching-errors (pooled over the three d ∈ {3,5}-trained seeds) and the pooled removed fraction. **τ′ = the τ with the largest removed fraction among those whose ratio is ≤ 1.02 at every p**; if none qualifies, the largest τ in the grid. The per-τ, per-p table and τ′ are written to `results/e9b_tau.json` and committed **before any confirmatory test shot is run**.
+
+**Test.** Fresh test shots (`test_seed` chunks from offset 1000, disjoint from every seed used so far), d ∈ {3, 5, 7}, p ∈ {0.002 … 0.006}, scenario S0, the same error budget as E9 (≥ 1 000 matching errors at d = 7, p = 0.002). Decoders: matching and `pd_s0..2`, `pd_ref`, all at τ′. No threshold sweep.
+
+**Confirmation criterion (the same rule as E9):** `classify_result(ratio, removed_fraction)` at d = 7, p = 0.002 with ratio = mean over the three d ∈ {3,5}-trained seeds. *Positive* → the hypothesis is confirmed; *partial* or *negative* → not confirmed. Everything else (ratios at all d and p, paired tests, whether the in-distribution gains at d = 3, 5 survive the stricter τ′) is descriptive.
+
+**No other changes.** Any deviation from this section will be reported as one.
