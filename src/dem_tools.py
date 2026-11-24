@@ -15,25 +15,39 @@ import stim
 P_MIN, P_MAX = 1e-12, 0.5 - 1e-12
 
 
+def _inst_components(inst):
+    """Graph-like components of one DEM error instruction as (u, v_or_None, frozenset(observables))."""
+    out, comp_dets, comp_obs = [], [], set()
+    for t in list(inst.targets_copy()) + [stim.target_separator()]:
+        if t.is_separator():
+            if comp_dets:
+                if len(comp_dets) > 2:
+                    raise ValueError(f"non-graphlike component with detectors {comp_dets}")
+                u = comp_dets[0]
+                v = comp_dets[1] if len(comp_dets) == 2 else None
+                out.append((min(u, v) if v is not None else u, max(u, v) if v is not None else None,
+                            frozenset(comp_obs)))
+            comp_dets, comp_obs = [], set()
+        elif t.is_relative_detector_id():
+            comp_dets.append(t.val)
+        elif t.is_logical_observable_id():
+            comp_obs.add(t.val)
+    return out
+
+
 def _components(dem: stim.DetectorErrorModel):
     """Yield (p, node_u, node_v_or_None, frozenset(observables)) for every graph-like component."""
     for inst in dem.flattened():
-        if inst.type != "error":
-            continue
-        p = inst.args_copy()[0]
-        comp_dets, comp_obs = [], set()
-        for t in list(inst.targets_copy()) + [stim.target_separator()]:
-            if t.is_separator():
-                if comp_dets:
-                    if len(comp_dets) > 2:
-                        raise ValueError(f"non-graphlike component with detectors {comp_dets}")
-                    u = comp_dets[0]; v = comp_dets[1] if len(comp_dets) == 2 else None
-                    yield p, min(u, v) if v is not None else u, (max(u, v) if v is not None else None), frozenset(comp_obs)
-                comp_dets, comp_obs = [], set()
-            elif t.is_relative_detector_id():
-                comp_dets.append(t.val)
-            elif t.is_logical_observable_id():
-                comp_obs.add(t.val)
+        if inst.type == "error":
+            p = inst.args_copy()[0]
+            for u, v, obs in _inst_components(inst):
+                yield p, u, v, obs
+
+
+def mechanism_components(dem: stim.DetectorErrorModel) -> list[list[tuple[int, int | None]]]:
+    """For each DEM error instruction, in order, its graph-like components as (u, v) / (u, None)."""
+    return [[(u, v) for u, v, _ in _inst_components(inst)]
+            for inst in dem.flattened() if inst.type == "error"]
 
 
 def _group(dem):
