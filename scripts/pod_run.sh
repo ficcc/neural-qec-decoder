@@ -23,6 +23,14 @@ case "${1:-status}" in
       PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True OMP_NUM_THREADS=8 nohup python -m experiments.train_jobs --min-d ${MIN_D:-5} --device cuda --shard $i/$N > train_$i.out 2>&1 &
     done
     echo "started $N workers; tail -f train_*.out" ;;
+  warmstart)
+    # d=7 warm-start jobs (E8): 4 runs on N workers sharing the GPU; DONE marker when finished.
+    N=${WORKERS:-2}
+    for i in $(seq 0 $((N-1))); do
+      PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True OMP_NUM_THREADS=6 nohup         python -m experiments.train_jobs --warmstart --device cuda --shard $i/$N > train_ws_$i.out 2>&1 &
+    done
+    nohup bash -c 'while [ "$(ps -eo args | grep -c "^python -m experiments.train_jobs")" -gt 0 ]; do sleep 20; done; date > WARMSTART_DONE' > /dev/null 2>&1 &
+    echo "started $N warm-start workers" ;;
   eval)
     # The pod's cgroup allows ~13.6 CPUs and 62 GB RAM (the host shows 128 cores), so run the
     # ~119 single-point evaluation shards as a queue, PAR at a time.
