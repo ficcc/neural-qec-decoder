@@ -82,3 +82,25 @@ def test_graph_batch_to_device_keeps_values():
     h = g.to("cpu")
     assert torch.equal(h.x, g.x) and torch.equal(h.edge_index, g.edge_index)
     assert h.n_graphs == g.n_graphs and torch.equal(h.nonempty, g.nonempty)
+
+
+def test_det_ids_match_fired_detectors():
+    t = _table(3)
+    dets = np.random.default_rng(4).random((8, len(t))) < 0.15
+    g = build_graph_batch(dets, t, d=3, rounds=3, k=8)
+    assert g.det.tolist() == np.nonzero(dets)[1].tolist()
+    assert g.batch.tolist() == np.nonzero(dets)[0].tolist()
+
+
+def test_det_present_for_empty_and_tiny_batches():
+    t = _table(3)
+    empty = build_graph_batch(np.zeros((3, len(t)), dtype=bool), t, d=3, rounds=3, k=8)
+    assert empty.det.numel() == 0
+    one = np.zeros((2, len(t)), dtype=bool); one[1, 7] = True
+    assert build_graph_batch(one, t, d=3, rounds=3, k=8).det.tolist() == [7]
+
+
+def test_to_keeps_det():
+    t = _table(3)
+    g = build_graph_batch(_dets_with_counts(len(t), [3, 0, 2]), t, d=3, rounds=3, k=8)
+    assert torch.equal(g.to("cpu").det, g.det)

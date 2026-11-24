@@ -16,10 +16,12 @@ class GraphBatch:
     batch: torch.Tensor       # (N,) graph id of each node
     n_graphs: int
     nonempty: torch.Tensor    # (n_graphs,) bool
+    det: torch.Tensor | None = None  # (N,) detector id of each node
 
     def to(self, device) -> "GraphBatch":
         return GraphBatch(self.x.to(device), self.edge_index.to(device), self.edge_attr.to(device),
-                          self.batch.to(device), self.n_graphs, self.nonempty.to(device))
+                          self.batch.to(device), self.n_graphs, self.nonempty.to(device),
+                          None if self.det is None else self.det.to(device))
 
 
 def detector_table(circuit: stim.Circuit, d: int) -> np.ndarray:
@@ -57,11 +59,12 @@ def build_graph_batch(dets: np.ndarray, table: np.ndarray, d: int, rounds: int,
     nonempty = torch.from_numpy(counts > 0)
     x = torch.from_numpy(feats_all[det])
     batch = torch.from_numpy(shot.astype(np.int64))
+    det_ids = torch.from_numpy(det.astype(np.int64))
     pos_flat = torch.from_numpy(table[det, :3].astype(np.float32))
     nmax = int(counts.max()) if B else 0
     if nmax < 2:
         empty = torch.zeros((2, 0), dtype=torch.long)
-        return GraphBatch(x, empty, torch.zeros((0, 4)), batch, B, nonempty)
+        return GraphBatch(x, empty, torch.zeros((0, 4)), batch, B, nonempty, det_ids)
     # Padded (B, nmax, 3) positions; position-in-graph of each node.
     starts = np.concatenate([[0], np.cumsum(counts)[:-1]])
     slot = torch.from_numpy(np.arange(len(det)) - starts[shot])
@@ -83,4 +86,4 @@ def build_graph_batch(dets: np.ndarray, table: np.ndarray, d: int, rounds: int,
     delta = pos_flat[src] - pos_flat[dst]
     inv = 1.0 / delta.norm(dim=1, keepdim=True)
     return GraphBatch(x, torch.stack([src, dst]), torch.cat([delta, inv], dim=1),
-                      batch, B, nonempty)
+                      batch, B, nonempty, det_ids)
