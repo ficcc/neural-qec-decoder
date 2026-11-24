@@ -1,0 +1,222 @@
+{
+ "meta": {
+  "cpu": "x86_64",
+  "torch_threads": 64,
+  "gpu": "NVIDIA GeForce RTX 4090"
+ },
+ "rows": [
+  {
+   "d": 3,
+   "device": "cuda",
+   "p": 0.004,
+   "mwpm_single": {
+    "median_us_shot": 4.050030838698149,
+    "p99_us_shot": 6.700492813251912,
+    "median_us_round": 1.3500102795660496,
+    "p99_us_round": 2.233497604417304
+   },
+   "mwpm_batch4096": {
+    "median_us_shot": 0.39100244464407297,
+    "p99_us_shot": 0.6092912315125432,
+    "median_us_round": 0.130334148214691,
+    "p99_us_round": 0.2030970771708477
+   },
+   "gnn_b1_graph": {
+    "median_us_shot": 359.661498805508,
+    "p99_us_shot": 5420.046888757497,
+    "median_us_round": 119.88716626850267,
+    "p99_us_round": 1806.682296252499
+   },
+   "gnn_b1_forward": {
+    "median_us_shot": 1291.1400117445737,
+    "p99_us_shot": 3523.4864993253723,
+    "median_us_round": 430.3800039148579,
+    "p99_us_round": 1174.495499775124
+   },
+   "gnn_b1_total": {
+    "median_us_shot": 1656.025997363031,
+    "p99_us_shot": 7631.90022145863,
+    "median_us_round": 552.0086657876769,
+    "p99_us_round": 2543.96674048621
+   },
+   "gnn_b64_graph": {
+    "median_us_shot": 9.519015748082893,
+    "p99_us_shot": 1325.66509993012,
+    "median_us_round": 3.173005249360964,
+    "p99_us_round": 441.88836664337333
+   },
+   "gnn_b64_forward": {
+    "median_us_shot": 26.54995341799804,
+    "p99_us_shot": 1212.0019387020873,
+    "median_us_round": 8.849984472666014,
+    "p99_us_round": 404.0006462340291
+   },
+   "gnn_b64_total": {
+    "median_us_shot": 36.30146875366336,
+    "p99_us_shot": 1358.5774619969015,
+    "median_us_round": 12.100489584554452,
+    "p99_us_round": 452.8591539989672
+   },
+   "gnn_b4096_graph": {
+    "median_us_shot": 18.228943602593972,
+    "p99_us_shot": 67.09951335778896,
+    "median_us_round": 6.076314534197991,
+    "p99_us_round": 22.36650445259632
+   },
+   "gnn_b4096_forward": {
+    "median_us_shot": 0.5398164120151705,
+    "p99_us_shot": 2.2870273187436396,
+    "median_us_round": 0.17993880400505682,
+    "p99_us_round": 0.7623424395812132
+   },
+   "gnn_b4096_total": {
+    "median_us_shot": 18.768760014609143,
+    "p99_us_shot": 69.35830023735434,
+    "median_us_round": 6.256253338203048,
+    "p99_us_round": 23.119433412451446
+   }
+  },
+  {
+   "d": 5,
+   "device": "cuda",
+   "p": 0.004,
+   "mwpm_single": {
+    "median_us_shot": 6.770016625523567,
+    "p99_us_shot": 16.090894932858646,
+    "median_us_round": 1.3540033251047134,
+    "p99_us_round": 3.218178986571729
+   },
+   "mwpm_batch4096": {
+    "median_us_shot": 3.2680952131158847,
+    "p99_us_shot": 3.27598197259249,
+    "median_us_round": 0.6536190426231769,
+    "p99_us_round": 0.655196394518498
+   },
+   "gnn_b1_graph": {
+    "median_us_shot": 388.5759797412902,
+    "p99_us_shot": 4710.897877812385,
+    "median_us_round": 77.71519594825804,
+    "p99_us_round": 942.1795755624769
+   },
+   "gnn_b1_forward": {
+    "median_us_shot": 1365.780015476048,
+    "p99_us_shot": 3670.5550295300764,
+    "median_us_round": 273.1560030952096,
+    "p99_us_round": 734.1110059060153
+   },
+   "gnn_b1_total": {
+    "median_us_shot": 1763.6670090723783,
+    "p99_us_shot": 6200.0714597525075,
+    "median_us_round": 352.73340181447566,
+    "p99_us_round": 1240.0142919505015
+   },
+   "gnn_b64_graph": {
+    "median_us_shot": 27.610179586190498,
+    "p99_us_shot": 1326.9865140955517,
+    "median_us_round": 5.5220359172380995,
+    "p99_us_round": 265.39730281911034
+   },
+   "gnn_b64_forward": {
+    "median_us_shot": 26.373609671281883,
+    "p99_us_shot": 1322.3181446483068,
+    "median_us_round": 5.274721934256377,
+    "p99_us_round": 264.46362892966135
+   },
+   "gnn_b64_total": {
+    "median_us_shot": 60.03975022395025,
+    "p99_us_shot": 1386.1737518254813,
+    "median_us_round": 12.00795004479005,
+    "p99_us_round": 277.23475036509626
+   },
+   "gnn_b4096_graph": {
+    "median_us_shot": 40.66162793492367,
+    "p99_us_shot": 43.7434125984737,
+    "median_us_round": 8.132325586984734,
+    "p99_us_round": 8.74868251969474
+   },
+   "gnn_b4096_forward": {
+    "median_us_shot": 5.12682544240306,
+    "p99_us_shot": 10.150575162128916,
+    "median_us_round": 1.025365088480612,
+    "p99_us_round": 2.0301150324257833
+   },
+   "gnn_b4096_total": {
+    "median_us_shot": 46.01713574459154,
+    "p99_us_shot": 48.863324144576836,
+    "median_us_round": 9.203427148918308,
+    "p99_us_round": 9.772664828915367
+   }
+  },
+  {
+   "d": 7,
+   "device": "cuda",
+   "p": 0.004,
+   "mwpm_single": {
+    "median_us_shot": 14.279969036579132,
+    "p99_us_shot": 33.1705849384889,
+    "median_us_round": 2.0399955766541615,
+    "p99_us_round": 4.7386549912127
+   },
+   "mwpm_batch4096": {
+    "median_us_shot": 11.013968503448268,
+    "p99_us_shot": 11.107918934385452,
+    "median_us_round": 1.5734240719211812,
+    "p99_us_round": 1.5868455620550646
+   },
+   "gnn_b1_graph": {
+    "median_us_shot": 694.0975144971162,
+    "p99_us_shot": 99554.92361157667,
+    "median_us_round": 99.15678778530231,
+    "p99_us_round": 14222.131944510953
+   },
+   "gnn_b1_forward": {
+    "median_us_shot": 1738.3170197717845,
+    "p99_us_shot": 83029.61855253669,
+    "median_us_round": 248.33100282454066,
+    "p99_us_round": 11861.374078933814
+   },
+   "gnn_b1_total": {
+    "median_us_shot": 2762.5855000223964,
+    "p99_us_shot": 101377.23540654406,
+    "median_us_round": 394.6550714317709,
+    "p99_us_round": 14482.462200934866
+   },
+   "gnn_b64_graph": {
+    "median_us_shot": 78.16989091224968,
+    "p99_us_shot": 1523.8916691669144,
+    "median_us_round": 11.167127273178526,
+    "p99_us_round": 217.69880988098777
+   },
+   "gnn_b64_forward": {
+    "median_us_shot": 26.340249860368203,
+    "p99_us_shot": 1223.4569184875,
+    "median_us_round": 3.7628928371954578,
+    "p99_us_round": 174.77955978392856
+   },
+   "gnn_b64_total": {
+    "median_us_shot": 110.24946070392616,
+    "p99_us_shot": 1564.9562474573027,
+    "median_us_round": 15.749922957703737,
+    "p99_us_round": 223.5651782081861
+   },
+   "gnn_b4096_graph": {
+    "median_us_shot": 34.568065672146986,
+    "p99_us_shot": 79.42622116331677,
+    "median_us_round": 4.938295096020998,
+    "p99_us_round": 11.346603023330967
+   },
+   "gnn_b4096_forward": {
+    "median_us_shot": 14.883579837032812,
+    "p99_us_shot": 15.160642115574774,
+    "median_us_round": 2.1262256910046875,
+    "p99_us_round": 2.165806016510682
+   },
+   "gnn_b4096_total": {
+    "median_us_shot": 49.152550289477404,
+    "p99_us_shot": 94.53818253746249,
+    "median_us_round": 7.021792898496772,
+    "p99_us_round": 13.505454648208927
+   }
+  }
+ ]
+}
