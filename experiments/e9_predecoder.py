@@ -41,6 +41,7 @@ TAU_FILE = RESULTS / "e9_tau.json"
 TAU_FILE_B = RESULTS / "e9b_tau.json"            # confirmatory test (spec section 11)
 CONFIRM_VAL_OFFSET = 600                          # fresh validation seeds: val_seed(600 + j)
 CONFIRM_CHUNK_OFFSET = 1000                       # fresh test seeds: test_seed(1000 + chunk)
+CONFIRM_FIXED_TAU = 0.95                          # arm B of E9b (spec section 11.1), from the exploratory sweep
 CKPT_QUICK = Path("checkpoints/e9_quick")
 
 
@@ -142,7 +143,7 @@ class _ScoreCache:
 
 
 def run_points(pts, out_jsonl: Path, tau: float, d35_models, ref_model, max_shots: int, shots_dir: Path,
-               chunk_offset: int = 0, sweep: bool = True):
+               chunk_offset: int = 0, sweep: bool = True, extra_taus: tuple = ()):
     for d, p in pts:
         _, noisy, table, det_table, matching = point_setup(d, p)
         cache, stats, taus = _ScoreCache(), defaultdict(lambda: [0, 0]), {}
@@ -160,9 +161,14 @@ def run_points(pts, out_jsonl: Path, tau: float, d35_models, ref_model, max_shot
 
         for s, m in enumerate(d35_models):
             add_pd(f"pd_s{s}", ("d35", s), m, tau)
+        for xt in extra_taus:                      # additional fixed-tau arms (E9b arm B)
+            for s, m in enumerate(d35_models):
+                add_pd(f"pdx{xt}_s{s}", ("d35", s), m, xt)
         if d == 7:
             if ref_model is not None:
                 add_pd("pd_ref", ("ref", 0), ref_model, tau)
+                for xt in extra_taus:
+                    add_pd(f"pdx{xt}_ref", ("ref", 0), ref_model, xt)
             for t in (TAU_GRID if sweep else ()):
                 add_pd(f"pd_s0_tau{t}", ("d35", 0), d35_models[0], t)
         budget = eval_budget(d, p)
@@ -179,7 +185,7 @@ def run_points(pts, out_jsonl: Path, tau: float, d35_models, ref_model, max_shot
                                            if "_tau" not in r["decoder"]), flush=True)
 
 
-def summarise(rows: list[dict]) -> dict:
+def summarise(rows: list[dict], prefix: str = "pd_s") -> dict:
     """{(d, p): {ratio, ratio_std, removed, n}}: pre-decoder/matching LER ratio on identical shots,
     averaged over the d in {3,5}-trained seeds."""
     by = defaultdict(dict)
@@ -189,7 +195,7 @@ def summarise(rows: list[dict]) -> dict:
     out = {}
     for key, dd in by.items():
         m = dd.get("matching")
-        seeds = [r for n, r in dd.items() if n.startswith("pd_s") and "_tau" not in n]
+        seeds = [r for n, r in dd.items() if n.startswith(prefix) and "_tau" not in n]
         if not m or not m["ler"] or not seeds:
             continue
         ratios = [r["ler"] / m["ler"] for r in seeds]
@@ -199,7 +205,7 @@ def summarise(rows: list[dict]) -> dict:
     return out
 
 
-def plot_results(rows: list[dict], shots_dir: Path, fig_dir: Path) -> dict:
+def plot_results(rows: list[dict], shots_dir: Path, fig_dir: Path, extra_prefix: str | None = None) -> dict:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -242,8 +248,24 @@ def plot_results(rows: list[dict], shots_dir: Path, fig_dir: Path) -> dict:
         if f.exists():
             err = load_errors(f)
             paired[p] = {n: paired_compare(err[n], err["matching"]) for n in err if n.startswith("pd_s") and "_tau" not in n}
-    return {"summary": {f"{d},{p}": v for (d, p), v in summ.items()}, "verdict": verdict,
-            "paired_d7": {str(p): v for p, v in paired.items()}}
+    result = {"summary": {f"{d},{p}": v for (d, p), v in summ.items()}, "verdict": verdict,
+              "paired_d7": {str(p): v for p, v in paired.items()}}
+    if extra_prefix:
+        summ_x = summarise(rows, extra_prefix)
+        result["summary_extra"] = {f"{d},{p}": v for (d, p), v in summ_x.items()}
+        if (7, 0.002) in summ_x:
+            sx = summ_x[(7, 0.002)]
+            result["verdict_extra"] = {"ratio": sx["ratio"], "removed": sx["removed"],
+                                       "label": classify_result(sx["ratio"], sx["removed"])}
+        paired_x = {}
+        for p in sorted({k[1] for k in summ_x if k[0] == 7}):
+            f = Path(shots_dir) / f"e9_d7_p{p}.npz"
+            if f.exists():
+                err = load_errors(f)
+                paired_x[str(p)] = {n: paired_compare(err[n], err["matching"]) for n in err
+                                    if n.startswith(extra_prefix) and "_tau" not in n}
+        result["paired_d7_extra"] = paired_x
+    return result
 
 
 def time_components(model, table, det_table, matching, dets, d: int, tau: float) -> dict:
@@ -339,16 +361,20 @@ def main(argv=None):
         d35, ref = _load_models()
         pts = my_points([(d, p) for d in DS for p in P_TEST], a.confirm_shard)
         run_points(pts, out_path("e9b", a.confirm_shard, root=RESULTS), tau, d35, ref, 2_000_000,
-                   RESULTS / "shots_confirm", chunk_offset=CONFIRM_CHUNK_OFFSET, sweep=False)
+                   RESULTS / "shots_confirm", chunk_offset=CONFIRM_CHUNK_OFFSET, sweep=False,
+                   extra_taus=(CONFIRM_FIXED_TAU,))
         return
     if a.confirm_plot:
         rows = load_rows("e9b", root=RESULTS)
         (RESULTS / "e9b.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
-        out = plot_results(rows, RESULTS / "shots_confirm", Path("figures") / "e9b")
+        out = plot_results(rows, RESULTS / "shots_confirm", Path("figures") / "e9b",
+                           extra_prefix=f"pdx{CONFIRM_FIXED_TAU}_s")
         (RESULTS / "e9b_summary.json").write_text(json.dumps(out, indent=1))
-        print(json.dumps(out["verdict"]))
-        for p, v in out["paired_d7"].items():
-            print(f"d=7 p={p}: " + "; ".join(f"{n}: diff {x['diff']:+.2e} (p={x['p_value']:.2g})" for n, x in v.items()))
+        print("arm A (tau' from the pre-registered rule):", json.dumps(out["verdict"]))
+        print(f"arm B (fixed tau={CONFIRM_FIXED_TAU}):", json.dumps(out.get("verdict_extra")))
+        for key in ("paired_d7", "paired_d7_extra"):
+            for p, v in out.get(key, {}).items():
+                print(f"{key} d=7 p={p}: " + "; ".join(f"{n}: diff {x['diff']:+.2e} (p={x['p_value']:.2g})" for n, x in v.items()))
         return
     if a.plot:
         rows = load_rows("e9", root=RESULTS)
