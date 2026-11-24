@@ -17,7 +17,7 @@ The original hypothesis was that a decoder trained only on syndromes, which lear
 | The GNN needs about 100× more data than calibrated matching (10⁶ vs 10⁴ shots), and a Python/PyTorch decoder is 100–1000× above the ~1 µs/round hardware budget. | E4, E5 |
 | Adapting to drift with few new shots: **inconclusive**, because the drift was too weak to create a gap. | E7 |
 | Warm-starting the d = 7 GNN from d = 3,5 weights lowers its test error by ~15%, but it stays ~1.8× worse than matching. | E8 |
-| A local GNN pre-decoder (removes 70–90% of fired detectors, then matching) beats matching by 3–10% at d = 3, 5, but zero-shot at d = 7 it is worse at low error rates: pre-registered verdict *partial*. A stricter threshold looks sufficient post hoc (unconfirmed), and the Python implementation is 10–25× slower than matching. | E9 |
+| A local GNN pre-decoder (removes 30–90% of fired detectors, then matching) beats matching by 3–10% at d = 3, 5. Zero-shot at d = 7 it fails at the validation-chosen threshold (pre-registered verdict *partial*), but **a stricter fixed threshold (0.95) was confirmed on fresh shots**: ratio 0.98 while removing 63%. The Python implementation is 10–25× slower than matching. | E9, E9b |
 
 So this is mostly a **negative result with one clean positive** (small-distance crosstalk). The d = 7 failure is a statement about *this GNN under this training budget*, not about neural decoders in general (see Limitations).
 
@@ -185,10 +185,38 @@ Ratio of logical error rate, pre-decoder + matching over matching alone, on iden
 - **Where it was trained it beats matching** while removing 71–90% of the detectors. At d = 3 every paired comparison has p < 1e-11; at d = 5 the gain is significant from p = 0.004 upward and marginal at p = 0.002 (p between 0.005 and 0.06 across seeds).
 - **At d = 7 it gets worse as the error rate falls**, and the d = 7-trained reference does too (ratio 1.30 at p = 0.002, 1.02 at p = 0.004, 0.96 at p = 0.006), so this is not only a transfer failure.
 - **Removal precision is not the problem:** at τ = 0.7 the fraction of removed faults that were truly isolated is 0.925–0.967 and no lower at d = 7 than at d = 3 (recall of isolated faults 0.77–0.88). My working explanation, which I have **not tested**, is that matching's own logical failures become extremely rare at d = 7 and low p, so a few percent of wrong removals dominate.
-- **The threshold was probably too aggressive.** *Exploratory, on test shots already seen, so it does not change the verdict:* at d = 7, p = 0.002 a threshold of 0.95 gives ratio 0.993 while removing 64% of fired detectors, and 0.98 gives 0.977 at 44%; the ratio only rises above 1 beyond roughly 70% removal (`figures/e9_tradeoff_d7.png`). The validation set that chose τ = 0.7 pooled errors across error rates, so p = 0.006 carried about 70% of the weight. Whether a stricter rule passes on fresh shots is **not yet confirmed**.
+- **The threshold was too aggressive for d = 7.** *Exploratory, on test shots already seen, so it does not change the verdict:* at d = 7, p = 0.002 a threshold of 0.95 gives ratio 0.993 while removing 64% of fired detectors, and 0.98 gives 0.977 at 44%; the ratio only rises above 1 beyond roughly 70% removal (`figures/e9_tradeoff_d7.png`). The validation set that chose τ = 0.7 pooled errors across error rates, so p = 0.006 carried about 70% of the weight. **This was then confirmed on fresh shots (E9b, below).**
 - **Speed is a net loss as implemented.** Matching on the residual is 3–5× faster than on the full syndrome (e.g. 1.7 vs 6.2 µs per shot at d = 7, p = 0.002), but the Python pre-decoder costs 45–402 µs per shot (inference plus the removal step) against 2–19 µs for matching alone, so the combination is **10–25× slower than matching on a CPU** (`results/e9_diag.json`). This says nothing about a hardware implementation.
 
 ![E9 trade-off](figures/e9_tradeoff_d7.png)
+
+### E9b: confirmatory test of a stricter threshold
+
+![E9b](figures/e9b/e9_ratio_vs_distance.png)
+
+The E9 sweep suggested a stricter threshold would transfer to d = 7. Because that came from shots that had already been seen, it was tested again on **fresh test shots** (seeds no earlier run used), with the rule written down in advance (`docs/design/2026-11-24-neural-predecoder-design.md`, section 11 and its amendment 11.1, committed before any of these shots were run). Same four trained models, nothing retrained, both arms decoding the same shots:
+
+- **Arm A, the pre-registered selection rule.** τ′ is the largest-removal threshold whose error ratio is ≤ 1.02 at *every* error rate on fresh d = 5 validation shots. It selected **τ′ = 0.7**, the same value as before: d = 5 validation cannot see the d = 7, low-p problem, so the rule did not tighten the threshold.
+- **Arm B, a fixed τ = 0.95.** Added by an amendment *before* any fresh test shot, because arm A would only repeat E9. The value comes from the exploratory sweep, so it was not chosen on validation data.
+
+Same success criterion as E9: positive if at d = 7, p = 0.002 the mean-over-seeds error ratio is ≤ 1.05 **and** at least 30% of fired detectors are removed.
+
+| p | arm A, τ = 0.7: ratio (removed) | arm B, τ = 0.95: ratio (removed) |
+|---|---|---|
+| 0.002 | **1.505** ± 0.021 (88%) | **0.978** ± 0.012 (63%) |
+| 0.003 | 1.166 ± 0.005 (83%) | 0.955 ± 0.016 (53%) |
+| 0.004 | 1.072 ± 0.009 (78%) | 0.962 ± 0.003 (43%) |
+| 0.005 | 1.032 ± 0.003 (72%) | 0.978 ± 0.002 (35%) |
+| 0.006 | 0.999 ± 0.002 (67%) | 0.979 ± 0.002 (28%) |
+
+(d = 7, zero-shot, ratio of pre-decoder + matching to matching alone on identical shots; mean ± std over 3 seeds.) The verdict point had 700 000 shots and 1 079 matching errors.
+
+- **Arm A: partial**, a replication of E9 (ratio 1.505 vs 1.462, removed 88%). Worse than matching at p ≤ 0.005 (paired p < 0.02), equal at p = 0.006.
+- **Arm B: positive.** The hypothesis is confirmed: with a stricter threshold, weights trained only on d = 3 and 5 are as good as matching at d = 7 while removing 63% of the work at p = 0.002. At p = 0.002 the difference from matching is *not* statistically significant (paired p = 0.07, 0.7 and 0.09 across seeds); from p = 0.004 upward all three seeds are **significantly better** than matching (2–4% fewer errors, paired p down to 1e-16), and at p = 0.003 two of the three seeds are (p = 0.001; the third has p = 0.13).
+- **The d = 7-trained reference** at τ = 0.95 has ratio 0.924 at p = 0.002 (73% removed) and 0.93–0.96 at higher p, so training at d = 7 helps a little further.
+- **The strict threshold costs in-distribution gain.** At τ = 0.95 the d = 3 gain disappears (ratio 0.998–1.000, 27–50% removed, against 0.94–0.975 at τ = 0.7) and the d = 5 gain shrinks to 0.96–0.99. No single τ is best everywhere: 0.7 gives more where it was trained, 0.95 is the safe choice for transfer.
+
+Caveats: the value 0.95 and the idea of the test came from looking at E9's test shots, so although τ was fixed before and the shots are fresh, this is not an independent discovery (disclosed in the pre-registration); only one τ was tested; S0 noise and d ≤ 7 only; and the speed problem from E9 remains (the Python pre-decoder is 10–25× slower than matching, and at τ = 0.95 fewer detectors are removed, so matching saves less).
 
 ### E5: latency
 
@@ -208,7 +236,7 @@ Superconducting hardware needs roughly **1 µs per round**. Matching in C++ (PyM
 - **The mismatch hypothesis had little headroom**: with these noise strengths (σ = 0.5, 3 bad couplers at 8×, drift δ = 0.3), calibrated matching nearly closes the gap by itself. Stronger or differently structured mismatch might show more.
 - Error bars in E2 are standard deviations over only 3 device instances; many differences there are within them.
 - Simulated Pauli noise only: **no leakage, erasure or real hardware data**. One code family and one memory basis (Z).
-- The E9 threshold-sweep result (a stricter τ would pass at d = 7) comes from shots that had already been seen, so it is a hypothesis, not a confirmed result.
+- The stricter E9b threshold (τ = 0.95) was suggested by E9's test shots. It was confirmed on fresh shots with the rule fixed in advance, but the idea is not independent of that earlier look, and only one τ was tested.
 - Test shots are not bit-identical across machines, so re-running an experiment elsewhere can move individual points by a few percent (sampling noise); compare runs with `scripts/compare_runs.py` and judge changes against the stated intervals.
 - Latency is measured in Python on CPU and a single GPU; it says nothing about FPGA/ASIC feasibility.
 

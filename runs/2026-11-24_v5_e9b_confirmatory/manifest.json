@@ -1,0 +1,2023 @@
+{
+ "label": "2026-11-24_v5_e9b_confirmatory",
+ "notes": "E9b confirmatory test on fresh seeds (test chunks from offset 1000, validation seeds 600+). Arm A: tau'=0.7 from the pre-registered per-error-rate rule -> PARTIAL (d=7 p=0.002 ratio 1.505, removed 88%). Arm B: fixed tau=0.95 (added by pre-registered amendment before any fresh shot) -> POSITIVE (ratio 0.978, removed 63%, 700k shots, 1079 matching errors). No retraining; models from v4. E1-E9 carried over.",
+ "extra": {
+  "eval_hardware": "local PC, CPU only",
+  "cost_usd": 0,
+  "preregistration": "spec section 11 (commit 'docs: pre-register confirmatory test E9b'), tau file (commit \"exp: E9b tau' = 0.7 selected by the pre-registered per-error-rate rule\"), amendment 11.1 (commit 'docs: amend E9b pre-registration with a fixed tau=0.95 arm'); all committed before any fresh test shot",
+  "models": "checkpoints/pd from v4 (pod 81sn3cxqscvpj4, terminated)"
+ },
+ "environment": {
+  "python": "3.12.14",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "machine": "AMD64",
+  "processor": "Intel64 Family 6 Model 151 Stepping 5, GenuineIntel",
+  "cpu_count": 12,
+  "packages": {
+   "stim": "1.16.0",
+   "pymatching": "2.4.0",
+   "sinter": "1.16.0",
+   "torch": "2.15.0+cpu",
+   "numpy": "2.5.5",
+   "matplotlib": "3.11.2",
+   "pytest": "9.2.0"
+  },
+  "torch_cuda": {
+   "available": false,
+   "device": null,
+   "threads": 6
+  },
+  "git": {
+   "commit": "fadf4302beb7cdbf31366edb9435714efb406801",
+   "branch": "feat/decoder",
+   "dirty": true
+  },
+  "timestamp_utc": "2026-11-24T09:47:39+00:00"
+ },
+ "tests": {
+  "summary_line": "154 passed in 33.79s",
+  "passed": 154,
+  "failed": 0,
+  "errors": 0,
+  "exit_code": 0
+ },
+ "job_configs": {
+  "e1/d3_s0": {
+   "scenario": "S0",
+   "instance": 0,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007,
+    0.008,
+    0.01
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e1/d3_s1": {
+   "scenario": "S0",
+   "instance": 0,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007,
+    0.008,
+    0.01
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 1,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e1/d3_s2": {
+   "scenario": "S0",
+   "instance": 0,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007,
+    0.008,
+    0.01
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 2,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e1/d5_s0": {
+   "scenario": "S0",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007,
+    0.008,
+    0.01
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e1/d5_s1": {
+   "scenario": "S0",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007,
+    0.008,
+    0.01
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 1,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e1/d5_s2": {
+   "scenario": "S0",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007,
+    0.008,
+    0.01
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 2,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e1/d7_s0": {
+   "scenario": "S0",
+   "instance": 0,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007,
+    0.008,
+    0.01
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e1/d7_s1": {
+   "scenario": "S0",
+   "instance": 0,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007,
+    0.008,
+    0.01
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 1,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e1/d7_s2": {
+   "scenario": "S0",
+   "instance": 0,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007,
+    0.008,
+    0.01
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 2,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S1_i0_d3_s0": {
+   "scenario": "S1",
+   "instance": 0,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S1_i0_d5_s0": {
+   "scenario": "S1",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S1_i0_d7_s0": {
+   "scenario": "S1",
+   "instance": 0,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S1_i1_d3_s0": {
+   "scenario": "S1",
+   "instance": 1,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S1_i1_d5_s0": {
+   "scenario": "S1",
+   "instance": 1,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S1_i1_d7_s0": {
+   "scenario": "S1",
+   "instance": 1,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S1_i2_d3_s0": {
+   "scenario": "S1",
+   "instance": 2,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S1_i2_d5_s0": {
+   "scenario": "S1",
+   "instance": 2,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S1_i2_d7_s0": {
+   "scenario": "S1",
+   "instance": 2,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i0_d3_s0": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i0_d5_s0": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i0_d7_s0": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i1_d3_s0": {
+   "scenario": "S2",
+   "instance": 1,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i1_d5_s0": {
+   "scenario": "S2",
+   "instance": 1,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i1_d7_s0": {
+   "scenario": "S2",
+   "instance": 1,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i2_d3_s0": {
+   "scenario": "S2",
+   "instance": 2,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i2_d5_s0": {
+   "scenario": "S2",
+   "instance": 2,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i2_d7_s0": {
+   "scenario": "S2",
+   "instance": 2,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S3_i0_d3_s0": {
+   "scenario": "S3",
+   "instance": 0,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S3_i0_d5_s0": {
+   "scenario": "S3",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S3_i0_d7_s0": {
+   "scenario": "S3",
+   "instance": 0,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S3_i1_d3_s0": {
+   "scenario": "S3",
+   "instance": 1,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S3_i1_d5_s0": {
+   "scenario": "S3",
+   "instance": 1,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S3_i1_d7_s0": {
+   "scenario": "S3",
+   "instance": 1,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S3_i2_d3_s0": {
+   "scenario": "S3",
+   "instance": 2,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S3_i2_d5_s0": {
+   "scenario": "S3",
+   "instance": 2,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S3_i2_d7_s0": {
+   "scenario": "S3",
+   "instance": 2,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i0_d3_s1": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 1,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i0_d3_s2": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 2,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i0_d5_s1": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 1,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i0_d5_s2": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 2,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i0_d7_s1": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 1,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e2/S2_i0_d7_s2": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 2,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e3/S0_d35_s0": {
+   "scenario": "S0",
+   "instance": 0,
+   "d_list": [
+    3,
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007,
+    0.008,
+    0.01
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e3/S0_d35_s1": {
+   "scenario": "S0",
+   "instance": 0,
+   "d_list": [
+    3,
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007,
+    0.008,
+    0.01
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 1,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e3/S0_d35_s2": {
+   "scenario": "S0",
+   "instance": 0,
+   "d_list": [
+    3,
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007,
+    0.008,
+    0.01
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 2,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e3/S1_d35_pool": {
+   "scenario": "S1",
+   "instance": 0,
+   "d_list": [
+    3,
+    5
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": [
+    5000,
+    5001,
+    5002,
+    5003,
+    5004,
+    5005,
+    5006,
+    5007,
+    5008,
+    5009,
+    5010,
+    5011,
+    5012,
+    5013,
+    5014,
+    5015,
+    5016,
+    5017,
+    5018,
+    5019
+   ],
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e3/S1_d7_pool": {
+   "scenario": "S1",
+   "instance": 0,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.0015,
+    0.002,
+    0.003,
+    0.004,
+    0.005,
+    0.006,
+    0.007
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": [
+    5000,
+    5001,
+    5002,
+    5003,
+    5004,
+    5005,
+    5006,
+    5007,
+    5008,
+    5009,
+    5010,
+    5011,
+    5012,
+    5013,
+    5014,
+    5015,
+    5016,
+    5017,
+    5018,
+    5019
+   ],
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e4/B1000_s0": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.004
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": 1000,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e4/B1000_s1": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.004
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 1,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": 1000,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e4/B1000_s2": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.004
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 2,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": 1000,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e4/B10000_s0": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.004
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": 10000,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e4/B10000_s1": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.004
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 1,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": 10000,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e4/B10000_s2": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.004
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 2,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": 10000,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e4/B100000_s0": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.004
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": 100000,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e4/B100000_s1": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.004
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 1,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": 100000,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e4/B100000_s2": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.004
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 2,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": 100000,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e4/B1000000_s0": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.004
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": 1000000,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e4/B1000000_s1": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.004
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 1,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": 1000000,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e4/B1000000_s2": {
+   "scenario": "S2",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.004
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 2,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": 1000000,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e6/S4_d3_s0": {
+   "scenario": "S4",
+   "instance": 0,
+   "d_list": [
+    3
+   ],
+   "p_grid": [
+    0.001,
+    0.0015,
+    0.002,
+    0.0025,
+    0.003,
+    0.0035
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e6/S4_d5_s0": {
+   "scenario": "S4",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.001,
+    0.0015,
+    0.002,
+    0.0025,
+    0.003,
+    0.0035
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e6/S4_d5_s1": {
+   "scenario": "S4",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.001,
+    0.0015,
+    0.002,
+    0.0025,
+    0.003,
+    0.0035
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 1,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e6/S4_d5_s2": {
+   "scenario": "S4",
+   "instance": 0,
+   "d_list": [
+    5
+   ],
+   "p_grid": [
+    0.001,
+    0.0015,
+    0.002,
+    0.0025,
+    0.003,
+    0.0035
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 2,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  },
+  "e6/S4_d7_s0": {
+   "scenario": "S4",
+   "instance": 0,
+   "d_list": [
+    7
+   ],
+   "p_grid": [
+    0.001,
+    0.0015,
+    0.002,
+    0.0025,
+    0.003,
+    0.0035
+   ],
+   "steps": 12000,
+   "batch_size": 1024,
+   "lr": 0.001,
+   "hidden": 64,
+   "layers": 4,
+   "k": 8,
+   "seed": 0,
+   "val_shots": 20000,
+   "val_every": 500,
+   "patience": 8,
+   "device": "cpu",
+   "instance_pool": null,
+   "fixed_shots": null,
+   "use_t1": false,
+   "init_from": null
+  }
+ }
+}
