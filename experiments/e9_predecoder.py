@@ -38,6 +38,9 @@ DS = (3, 5, 7)
 VAL_OFFSET = 500                       # validation shots use val_seed(500 + j): disjoint from training-time sets
 RESULTS = Path("results")
 TAU_FILE = RESULTS / "e9_tau.json"
+TAU_FILE_B = RESULTS / "e9b_tau.json"            # confirmatory test (spec section 11)
+CONFIRM_VAL_OFFSET = 600                          # fresh validation seeds: val_seed(600 + j)
+CONFIRM_CHUNK_OFFSET = 1000                       # fresh test seeds: test_seed(1000 + chunk)
 CKPT_QUICK = Path("checkpoints/e9_quick")
 
 
@@ -52,6 +55,13 @@ def eval_budget(d: int, p: float) -> dict:
 def choose_tau(removed_frac: dict, ratio: dict, max_ratio: float = 1.02) -> float:
     """Largest removed fraction among taus whose LER ratio is within max_ratio; else the largest tau."""
     ok = [t for t in removed_frac if ratio[t] <= max_ratio]
+    return max(ok, key=lambda t: removed_frac[t]) if ok else max(removed_frac)
+
+
+def choose_tau_per_p(removed_frac: dict, ratio_by_p: dict, max_ratio: float = 1.02) -> float:
+    """Confirmatory rule (spec section 11): largest removed fraction among taus whose ratio is within
+    max_ratio at EVERY validation error rate; else the largest tau."""
+    ok = [t for t in removed_frac if max(ratio_by_p[t].values()) <= max_ratio]
     return max(ok, key=lambda t: removed_frac[t]) if ok else max(removed_frac)
 
 
@@ -72,31 +82,44 @@ def _matching_errors(matching, dets, obs):
     return matching.decode_batch(dets)[:, 0].astype(bool) != obs
 
 
-def select_tau(models, d: int = 5, val_shots: int = 100_000, p_val=P_VAL, out: Path | None = None) -> dict:
-    """Pick tau on validation shots (paired with matching on the same shots), aggregated over models and p."""
+def select_tau(models, d: int = 5, val_shots: int = 100_000, p_val=P_VAL, out: Path | None = None,
+               per_p: bool = False, val_offset: int = VAL_OFFSET) -> dict:
+    """Pick tau on validation shots (paired with matching on the same shots), aggregated over models.
+    per_p=False: pooled over error rates (E9). per_p=True: the ratio must hold at every error rate (E9b)."""
     removed = {t: [0, 0] for t in TAU_GRID}
     errs_pd = dict.fromkeys(TAU_GRID, 0)
     errs_base = 0
+    pp_err, pp_base, pp_rem = defaultdict(int), defaultdict(int), defaultdict(lambda: [0, 0])
     for j, p in enumerate(p_val):
         _, noisy, table, det_table, matching = point_setup(d, p)
-        dets, obs = sample_shots(noisy, val_shots, seed=val_seed(VAL_OFFSET + j))
+        dets, obs = sample_shots(noisy, val_shots, seed=val_seed(val_offset + j))
         base = int(_matching_errors(matching, dets, obs).sum())
         for model in models:
             sc = score(model, table, det_table, dets, d)
             errs_base += base
+            pp_base[p] += base
             for t in TAU_GRID:
                 r = apply_tau(sc, table, dets, t)
                 pred = matching.decode_batch(r.residual)[:, 0].astype(bool) ^ r.logical
-                errs_pd[t] += int((pred != obs).sum())
-                removed[t][0] += int(r.n_removed_dets.sum())
-                removed[t][1] += int(r.n_fired.sum())
+                e = int((pred != obs).sum())
+                errs_pd[t] += e
+                pp_err[(t, p)] += e
+                for acc in (removed[t], pp_rem[(t, p)]):
+                    acc[0] += int(r.n_removed_dets.sum())
+                    acc[1] += int(r.n_fired.sum())
     removed_frac = {t: removed[t][0] / max(removed[t][1], 1) for t in TAU_GRID}
     ratio = {t: errs_pd[t] / max(errs_base, 1) for t in TAU_GRID}
-    result = {"tau": choose_tau(removed_frac, ratio), "d": d, "p_val": list(p_val), "val_shots": val_shots,
-              "n_models": len(models), "max_ratio": 1.02, "errors_matching": errs_base,
+    ratio_by_p = {t: {p: pp_err[(t, p)] / max(pp_base[p], 1) for p in p_val} for t in TAU_GRID}
+    tau = choose_tau_per_p(removed_frac, ratio_by_p) if per_p else choose_tau(removed_frac, ratio)
+    result = {"tau": tau, "rule": "per_p" if per_p else "pooled", "d": d, "p_val": list(p_val),
+              "val_shots": val_shots, "val_offset": val_offset, "n_models": len(models), "max_ratio": 1.02,
+              "errors_matching": errs_base,
               "eval_budget": {f"{dd},{pp}": eval_budget(dd, pp) for dd in DS for pp in P_TEST},
               "removed_frac": {str(t): v for t, v in removed_frac.items()},
-              "ratio": {str(t): v for t, v in ratio.items()}}
+              "ratio": {str(t): v for t, v in ratio.items()},
+              "ratio_by_p": {str(t): {str(pp): v for pp, v in d_.items()} for t, d_ in ratio_by_p.items()},
+              "removed_by_p": {str(t): {str(pp): pp_rem[(t, pp)][0] / max(pp_rem[(t, pp)][1], 1) for pp in p_val}
+                               for t in TAU_GRID}}
     if out is not None:
         Path(out).parent.mkdir(parents=True, exist_ok=True)
         Path(out).write_text(json.dumps(result, indent=1))
@@ -118,7 +141,8 @@ class _ScoreCache:
         return sc
 
 
-def run_points(pts, out_jsonl: Path, tau: float, d35_models, ref_model, max_shots: int, shots_dir: Path):
+def run_points(pts, out_jsonl: Path, tau: float, d35_models, ref_model, max_shots: int, shots_dir: Path,
+               chunk_offset: int = 0, sweep: bool = True):
     for d, p in pts:
         _, noisy, table, det_table, matching = point_setup(d, p)
         cache, stats, taus = _ScoreCache(), defaultdict(lambda: [0, 0]), {}
@@ -139,11 +163,11 @@ def run_points(pts, out_jsonl: Path, tau: float, d35_models, ref_model, max_shot
         if d == 7:
             if ref_model is not None:
                 add_pd("pd_ref", ("ref", 0), ref_model, tau)
-            for t in TAU_GRID:
+            for t in (TAU_GRID if sweep else ()):
                 add_pd(f"pd_s0_tau{t}", ("d35", 0), d35_models[0], t)
         budget = eval_budget(d, p)
         rows = evaluate_point(d=d, p=p, scenario="S0", instance=0, test_circuit=noisy, decoders=decs,
-                              stop_on="matching", min_errors=budget["min_errors"],
+                              stop_on="matching", min_errors=budget["min_errors"], chunk_offset=chunk_offset,
                               max_shots=budget["max_shots"] if budget["min_errors"] > 100 else max_shots,
                               save_errors=Path(shots_dir) / f"e9_d{d}_p{p}.npz")
         for r in rows:
@@ -281,6 +305,9 @@ def main(argv=None):
     ap.add_argument("--diag", action="store_true")
     ap.add_argument("--plot", action="store_true")
     ap.add_argument("--quick", action="store_true")
+    ap.add_argument("--confirm-select", action="store_true", help="E9b: choose tau with the per-error-rate rule")
+    ap.add_argument("--confirm-shard", default=None, help="E9b: test points on fresh shots")
+    ap.add_argument("--confirm-plot", action="store_true")
     a = ap.parse_args(argv)
     if a.quick:
         cfg = PDConfig("S0", 0, (3,), (0.004,), steps=300, batch_size=512, hidden=32, layers=2,
@@ -302,6 +329,27 @@ def main(argv=None):
         res = select_tau(d35, d=5, out=TAU_FILE)
         print("chosen tau:", res["tau"])
         return
+    if a.confirm_select:
+        d35, _ = _load_models()
+        res = select_tau(d35, d=5, out=TAU_FILE_B, per_p=True, val_offset=CONFIRM_VAL_OFFSET)
+        print("E9b chosen tau:", res["tau"])
+        return
+    if a.confirm_shard is not None:
+        tau = json.loads(Path(TAU_FILE_B).read_text())["tau"]         # FileNotFoundError if not committed yet
+        d35, ref = _load_models()
+        pts = my_points([(d, p) for d in DS for p in P_TEST], a.confirm_shard)
+        run_points(pts, out_path("e9b", a.confirm_shard, root=RESULTS), tau, d35, ref, 2_000_000,
+                   RESULTS / "shots_confirm", chunk_offset=CONFIRM_CHUNK_OFFSET, sweep=False)
+        return
+    if a.confirm_plot:
+        rows = load_rows("e9b", root=RESULTS)
+        (RESULTS / "e9b.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+        out = plot_results(rows, RESULTS / "shots_confirm", Path("figures") / "e9b")
+        (RESULTS / "e9b_summary.json").write_text(json.dumps(out, indent=1))
+        print(json.dumps(out["verdict"]))
+        for p, v in out["paired_d7"].items():
+            print(f"d=7 p={p}: " + "; ".join(f"{n}: diff {x['diff']:+.2e} (p={x['p_value']:.2g})" for n, x in v.items()))
+        return
     if a.plot:
         rows = load_rows("e9", root=RESULTS)
         (RESULTS / "e9.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
@@ -322,7 +370,7 @@ def main(argv=None):
         pts = my_points([(d, p) for d in DS for p in P_TEST], a.shard)
         run_points(pts, out_path("e9", a.shard, root=RESULTS), tau, d35, ref, 2_000_000, RESULTS / "shots")
         return
-    ap.error("choose one of --select-tau, --shard, --diag, --plot, --quick")
+    ap.error("choose one of --select-tau, --shard, --diag, --plot, --quick, --confirm-select, --confirm-shard, --confirm-plot")
 
 
 if __name__ == "__main__":

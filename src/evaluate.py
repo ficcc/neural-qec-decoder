@@ -56,7 +56,8 @@ def count_errors_gnn(model, dets: np.ndarray, obs: np.ndarray, table: np.ndarray
 def evaluate_point(*, d: int, p: float, scenario: str, instance: int, test_circuit: stim.Circuit,
                    decoders: dict[str, Callable[[np.ndarray, np.ndarray], "int | np.ndarray"]],
                    min_errors: int = 100, chunk: int = 100_000, max_shots: int = 2_000_000,
-                   stop_on: str = "oracle", save_errors: Path | None = None) -> list[dict]:
+                   stop_on: str = "oracle", save_errors: Path | None = None,
+                   chunk_offset: int = 0) -> list[dict]:
     """Every decoder decodes the same chunks; stop once `stop_on` has min_errors (or max_shots).
 
     A decoder returns either an error count or a bool array of per-shot errors. Per-shot arrays are
@@ -67,7 +68,7 @@ def evaluate_point(*, d: int, p: float, scenario: str, instance: int, test_circu
     shots, i = 0, 0
     while shots < max_shots:
         n = min(chunk, max_shots - shots)
-        dets, obs = sample_shots(test_circuit, n, seed=test_seed(i))
+        dets, obs = sample_shots(test_circuit, n, seed=test_seed(chunk_offset + i))
         for name, fn in decoders.items():
             res = fn(dets, obs)
             if isinstance(res, np.ndarray):
