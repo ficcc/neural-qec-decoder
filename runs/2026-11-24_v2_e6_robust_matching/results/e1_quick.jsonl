@@ -1,0 +1,11 @@
+{"decoder": "naive", "d": 3, "p": 0.006, "scenario": "S0", "instance": 0, "shots": 20000, "errors": 510, "ler": 0.0255, "lo": 0.023404682827597532, "hi": 0.027777566086031134, "ler_round": 0.008648738789890753}
+{"decoder": "oracle", "d": 3, "p": 0.006, "scenario": "S0", "instance": 0, "shots": 20000, "errors": 510, "ler": 0.0255, "lo": 0.023404682827597532, "hi": 0.027777566086031134, "ler_round": 0.008648738789890753}
+{"decoder": "calibrated", "d": 3, "p": 0.006, "scenario": "S0", "instance": 0, "shots": 20000, "errors": 510, "ler": 0.0255, "lo": 0.023404682827597532, "hi": 0.027777566086031134, "ler_round": 0.008648738789890753}
+{"decoder": "correlated", "d": 3, "p": 0.006, "scenario": "S0", "instance": 0, "shots": 20000, "errors": 501, "ler": 0.02505, "lo": 0.022973610392864875, "hi": 0.02730881135956492, "ler_round": 0.00849346080803487}
+{"decoder": "gnn_s0", "d": 3, "p": 0.006, "scenario": "S0", "instance": 0, "shots": 20000, "errors": 558, "ler": 0.0279, "lo": 0.02570664638273732, "hi": 0.03027468072395203, "ler_round": 0.009478550394326435}
+{"decoder": "naive", "d": 3, "p": 0.01, "scenario": "S0", "instance": 0, "shots": 20000, "errors": 1175, "ler": 0.05875, "lo": 0.055574851793965534, "hi": 0.062094626252691264, "ler_round": 0.02040471034719632}
+{"decoder": "oracle", "d": 3, "p": 0.01, "scenario": "S0", "instance": 0, "shots": 20000, "errors": 1175, "ler": 0.05875, "lo": 0.055574851793965534, "hi": 0.062094626252691264, "ler_round": 0.02040471034719632}
+{"decoder": "calibrated", "d": 3, "p": 0.01, "scenario": "S0", "instance": 0, "shots": 20000, "errors": 1151, "ler": 0.05755, "lo": 0.05440646306191938, "hi": 0.060863475888207084, "ler_round": 0.019970343267559976}
+{"decoder": "correlated", "d": 3, "p": 0.01, "scenario": "S0", "instance": 0, "shots": 20000, "errors": 1144, "ler": 0.0572, "lo": 0.05406575681277857, "hi": 0.06050431656752654, "ler_round": 0.019843800835053438}
+{"decoder": "gnn_s0", "d": 3, "p": 0.01, "scenario": "S0", "instance": 0, "shots": 20000, "errors": 1316, "ler": 0.0658, "lo": 0.062446538842585136, "hi": 0.06932023139618743, "ler_round": 0.022972654138031845}
+{"meta": "threshold_d5_d7_naive", "value": null, "correlated_matching": "available"}

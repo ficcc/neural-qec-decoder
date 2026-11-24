@@ -117,18 +117,20 @@ Oracle matching: 6.29e-03; naive: 6.95e-03. Calibrated matching reaches the orac
 
 ![E6](figures/e6_clean.png)
 
-Per-round LER at p = 0.0025 (GNN: mean ± std over 3 seeds at d = 5, single seed otherwise):
+Per-round LER at p = 0.0025 (GNN: mean ± std over 3 seeds at d = 5, single seed otherwise). `oracle_corr` is not available at d = 3 (see the note below):
 
 | decoder | d = 3 | d = 5 | d = 7 |
 |---|---|---|---|
-| naive | 1.19e-02 | 9.07e-03 | 6.87e-03 |
-| calibrated | 1.16e-02 | 8.34e-03 | 6.55e-03 |
-| oracle | 1.56e-02 | 7.29e-03 | 5.07e-03 |
-| correlated | 1.18e-02 | 8.56e-03 | 6.23e-03 |
-| oracle_corr | 1.53e-02 | 6.18e-03 | 3.91e-03 |
-| **gnn** | **1.02e-02** | **6.72e-03** ± 4e-05 | 8.23e-03 |
+| naive | 1.16e-02 | 9.09e-03 | 7.24e-03 |
+| calibrated | 1.13e-02 | 8.32e-03 | 6.82e-03 |
+| oracle | 1.13e-02 | 7.43e-03 | 5.21e-03 |
+| correlated | 1.15e-02 | 8.60e-03 | 6.46e-03 |
+| oracle_corr | n/a | 6.26e-03 | 4.02e-03 |
+| **gnn** | **9.73e-03** | **6.91e-03** ± 5e-05 | 8.40e-03 |
 
-This is the GNN's best result. At d = 5 it beats naive, calibrated, correlated **and oracle** matching, which cannot represent the crosstalk correlations exactly even with the true error model (per-shot intervals [0.0318, 0.0340] for the GNN vs [0.0343, 0.0366] for oracle). `oracle_corr`, correlated matching on the true model, remains better (0.0302). At d = 7 the GNN is again behind. **One unexplained anomaly:** at d = 3 both `oracle` and `oracle_corr` are *worse* than `naive`. I suspect the decomposition of the true model's crosstalk hyperedges into matching edges, but I have not verified this, so treat the d = 3 oracle numbers with caution.
+This is the GNN's best result. At d = 3 it is below every matching variant (per-shot 0.0286 [0.0276, 0.0297] vs 0.0330 [0.0319, 0.0341] for oracle matching). At d = 5 it beats naive, calibrated, correlated **and oracle** matching, which cannot represent the crosstalk correlations exactly even with the true error model (per-shot 0.0338 [0.0327, 0.0349] for the GNN vs 0.0360 [0.0349, 0.0372] for oracle). `oracle_corr`, correlated matching on the true model, remains better (0.0305). At d = 7 the GNN is again behind.
+
+**A matching-graph pitfall found along the way.** In a first run the d = 3 oracle was *worse* than naive matching. The cause: under crosstalk two different faults flip the same detector, one with a logical flip (probability 0.0125) and one without (0.000625). A matching graph holds one logical-flip label per edge, and PyMatching's merge kept the wrong one. Restoring the correct label cut that decoder's error from 4.44% to 3.29% per shot. `src/dem_tools.py` now builds matching graphs that keep the label of the most probable mechanism; it is identical to PyMatching's default wherever there are no such conflicts (checked: zero differing predictions on 100 000 shots in S0, S2 and S4), and only S4 at d = 3 has any (14 edges). PyMatching's correlated mode cannot be rebuilt this way, so `oracle_corr` is omitted at d = 3. The first run is preserved in `runs/2026-11-20_baseline_v1`, the corrected one in `runs/2026-11-24_v2_e6_robust_matching`.
 
 ### E7: adapting to drift (S3, d = 5, p = 0.004): inconclusive
 
@@ -158,7 +160,7 @@ Superconducting hardware needs roughly **1 µs per round**. Matching in C++ (PyM
 - **The mismatch hypothesis had little headroom**: with these noise strengths (σ = 0.5, 3 bad couplers at 8×, drift δ = 0.3), calibrated matching nearly closes the gap by itself. Stronger or differently structured mismatch might show more.
 - Error bars in E2 are standard deviations over only 3 device instances; many differences there are within them.
 - Simulated Pauli noise only: **no leakage, erasure or real hardware data**. One code family and one memory basis (Z).
-- The S4 d = 3 oracle anomaly (above) is unexplained.
+- Test shots are not bit-identical across machines, so re-running an experiment elsewhere can move individual points by a few percent (sampling noise); compare runs with `scripts/compare_runs.py` and judge changes against the stated intervals.
 - Latency is measured in Python on CPU and a single GPU; it says nothing about FPGA/ASIC feasibility.
 
 ## Reproduce
