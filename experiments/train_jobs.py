@@ -9,8 +9,9 @@ from dataclasses import replace
 
 import torch
 
-from experiments.jobs import ablation_jobs, all_jobs, ckpt_dir, warmstart_jobs
+from experiments.jobs import ablation_jobs, all_jobs, ckpt_dir, predecoder_jobs, warmstart_jobs
 from src.train import train_gnn
+from src.train_pd import train_pd
 
 
 def select(jobs, min_d: int, max_d: int, only: tuple[str, ...]):
@@ -39,9 +40,13 @@ def main(argv=None):
     ap.add_argument("--shard", default="0/1", help="i/n: this worker's share of the jobs")
     ap.add_argument("--ablation", action="store_true", help="run the ablation jobs instead")
     ap.add_argument("--warmstart", action="store_true", help="run the d=7 warm-start jobs instead")
+    ap.add_argument("--predecoder", action="store_true", help="run the pre-decoder jobs (E9) instead")
     a = ap.parse_args(argv)
     i, n = map(int, a.shard.split("/"))
-    todo = pending(shard(select(ablation_jobs() if a.ablation else warmstart_jobs() if a.warmstart else all_jobs(), a.min_d, a.max_d, tuple(a.only)), i, n))
+    jobs = (ablation_jobs() if a.ablation else warmstart_jobs() if a.warmstart
+            else predecoder_jobs() if a.predecoder else all_jobs())
+    trainer = train_pd if a.predecoder else train_gnn
+    todo = pending(shard(select(jobs, a.min_d, a.max_d, tuple(a.only)), i, n))
     print(f"{len(todo)} pending jobs on {a.device}", flush=True)
     if a.list:
         for n, _ in todo:
@@ -52,7 +57,7 @@ def main(argv=None):
         cfg = replace(cfg, device=a.device, **({"steps": a.steps} if a.steps else {}))
         t0 = time.perf_counter()
         # Timing runs (--steps) go to a scratch dir so they can't masquerade as finished jobs.
-        train_gnn(cfg, ckpt_dir(("_timing/" if a.steps else "") + name))
+        trainer(cfg, ckpt_dir(("_timing/" if a.steps else "") + name))
         line = f"[{i}/{len(todo)}] {name} done in {(time.perf_counter() - t0) / 60:.1f} min"
         print(line, flush=True)
         with log.open("a") as f:

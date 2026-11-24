@@ -65,3 +65,11 @@ def warmstart_jobs() -> list[tuple[str, TrainConfig]]:
         jobs.append((f"ws/d7_from_d35_s{s}", replace(scratch[f"e1/d7_s{s}"], init_from=str(ckpt_dir(src) / "best.pt"))))
     jobs.append(("ws/d7_from_d5_s0", replace(scratch["e1/d7_s0"], init_from=str(ckpt_dir("e1/d5_s0") / "best.pt"))))
     return jobs
+
+
+def predecoder_jobs():
+    """Pre-decoders (E9): three seeds trained on d=3,5, and a d=7 reference. Same recipe as the GNN."""
+    from src.train_pd import PDConfig
+    jobs = [(f"pd/d35_s{s}", PDConfig("S0", 0, (3, 5), E1_GRID, seed=s)) for s in SEEDS3]
+    jobs.append(("pd/d7_s0", PDConfig("S0", 0, (7,), E1_GRID, seed=0)))
+    return jobs

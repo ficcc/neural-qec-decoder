@@ -95,8 +95,9 @@ def test_warmstart_jobs_differ_from_scratch_only_in_init():
         assert src in scratch
 
 
-def test_train_jobs_warmstart_flag_lists_them(capsys):
+def test_train_jobs_warmstart_flag_lists_them(capsys, tmp_path, monkeypatch):
     from experiments import train_jobs
+    monkeypatch.setattr(train_jobs, "ckpt_dir", lambda n: tmp_path / n)   # nothing finished, whatever is on disk
     train_jobs.main(["--warmstart", "--list", "--device", "cpu"])
     out = capsys.readouterr().out
     assert "ws/d7_from_d35_s0" in out and "e1/d7_s0" not in out
