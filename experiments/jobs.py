@@ -3,6 +3,7 @@
 Experiment scripts load checkpoints from ckpt_dir(name); train_jobs.py trains them,
 so training can run on a GPU pod while evaluation runs locally.
 """
+from dataclasses import replace
 from pathlib import Path
 
 from src.train import TrainConfig
@@ -52,3 +53,15 @@ def all_jobs() -> list[tuple[str, TrainConfig]]:
 def ablation_jobs() -> list[tuple[str, TrainConfig]]:
     """Receptive-field / capacity ablation at d=7 (blueprint 'Test A' mechanism check)."""
     return [("abl/d7_L8_H96_s0", TrainConfig("S0", 0, (7,), E1_GRID, seed=0, layers=8, hidden=96))]
+
+
+def warmstart_jobs() -> list[tuple[str, TrainConfig]]:
+    """d=7 GNNs initialised from smaller-distance models; every other setting (grid, steps, lr, seed,
+    architecture) is identical to the from-scratch E1 d=7 job of the same seed, so only init differs."""
+    scratch = dict(all_jobs())
+    jobs = []
+    for s in SEEDS3:
+        src = f"e3/S0_d35_s{s}"      # trained jointly on d=3 and d=5
+        jobs.append((f"ws/d7_from_d35_s{s}", replace(scratch[f"e1/d7_s{s}"], init_from=str(ckpt_dir(src) / "best.pt"))))
+    jobs.append(("ws/d7_from_d5_s0", replace(scratch["e1/d7_s0"], init_from=str(ckpt_dir("e1/d5_s0") / "best.pt"))))
+    return jobs

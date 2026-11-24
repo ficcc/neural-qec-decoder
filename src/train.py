@@ -118,6 +118,9 @@ def train_gnn(cfg: TrainConfig, out_dir: Path) -> Path:
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=cfg.steps)
     best, bad, history = float("inf"), 0, []
     ckpt = out_dir / "best.pt"
+    if cfg.init_from:   # how good are the inherited weights on this task before any training?
+        vl0, ler0 = _evaluate(model, val, tables, cfg.k, cfg.device)
+        history.append({"step": 0, "train_loss": None, "val_bce": vl0, "val_ler": ler0, "lr": cfg.lr})
     t0, total = time.perf_counter(), 0
     for step in range(1, cfg.steps + 1):
         i = int(rng.integers(len(keys)))

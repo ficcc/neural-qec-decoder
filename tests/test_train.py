@@ -114,3 +114,18 @@ def test_training_runs_with_instance_pool(tmp_path):
                       val_shots=60, val_every=2, instance_pool=(5000, 5001))
     path = train_gnn(cfg, tmp_path)
     assert path.exists()
+
+
+def _tiny(**kw):
+    return TrainConfig("S0", 0, (3,), (0.006,), steps=4, batch_size=16, hidden=8, layers=1,
+                       val_shots=64, val_every=2, **kw)
+
+
+def test_step0_eval_logged_only_when_warm_started(tmp_path):
+    p0 = train_gnn(_tiny(), tmp_path / "scratch")
+    scratch = json.loads((tmp_path / "scratch" / "log.json").read_text())["history"]
+    assert scratch[0]["step"] > 0
+    train_gnn(_tiny(init_from=str(p0), seed=1), tmp_path / "warm")
+    warm = json.loads((tmp_path / "warm" / "log.json").read_text())["history"]
+    assert warm[0]["step"] == 0 and warm[1]["step"] > 0
+    assert {"val_bce", "val_ler"} <= set(warm[0])

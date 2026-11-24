@@ -80,3 +80,23 @@ def test_ablation_jobs_separate_and_deeper():
 def test_e6_grid_below_s4_threshold():
     from experiments.jobs import E6_TEST_P, E6_TRAIN_GRID
     assert max(E6_TRAIN_GRID) <= 0.0035 and max(E6_TEST_P) < max(E6_TRAIN_GRID)
+
+
+def test_warmstart_jobs_differ_from_scratch_only_in_init():
+    from dataclasses import replace
+    from experiments.jobs import warmstart_jobs
+    jobs, scratch = dict(warmstart_jobs()), dict(all_jobs())
+    assert sorted(jobs) == ["ws/d7_from_d35_s0", "ws/d7_from_d35_s1", "ws/d7_from_d35_s2", "ws/d7_from_d5_s0"]
+    for name, cfg in jobs.items():
+        s = int(name[-1])
+        assert replace(cfg, init_from=None) == scratch[f"e1/d7_s{s}"]          # same recipe, same seeds
+        src = f"e3/S0_d35_s{s}" if "d35" in name else "e1/d5_s0"
+        assert cfg.init_from.replace("\\", "/").endswith(f"{src}/best.pt")
+        assert src in scratch
+
+
+def test_train_jobs_warmstart_flag_lists_them(capsys):
+    from experiments import train_jobs
+    train_jobs.main(["--warmstart", "--list", "--device", "cpu"])
+    out = capsys.readouterr().out
+    assert "ws/d7_from_d35_s0" in out and "e1/d7_s0" not in out
