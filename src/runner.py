@@ -6,6 +6,7 @@ import pymatching
 import stim
 
 from src.calibrate import calibrated_matching, matching_from_dem
+from src.dem_tools import parallel_edge_conflicts, robust_matching_from_dem
 from src.circuits import dem_of, noiseless_circuit
 from src.evaluate import count_errors_gnn, count_errors_matching
 from src.graph import detector_table
@@ -27,13 +28,17 @@ def matching_decoders(c: stim.Circuit, p: float, t0: NoiseModel, t1: NoiseModel,
     naive_dem = dem_of(apply_noise(c, si1000_model(c, p)))
     t0_c, t1_c = apply_noise(c, t0), apply_noise(c, t1)
     cal_dets = t0_c.compile_detector_sampler(seed=cal_seed).sample(cal_shots)
+    true_dem = dem_of(t1_c)
     decs = {
-        "naive": _m(matching_from_dem(naive_dem)),
-        "oracle": _m(matching_from_dem(dem_of(t1_c))),
+        "naive": _m(robust_matching_from_dem(naive_dem)),
+        "oracle": _m(robust_matching_from_dem(true_dem)),
         "calibrated": _m(calibrated_matching(naive_dem, cal_dets)),
         "correlated": _m(pymatching.Matching.from_detector_error_model(naive_dem, enable_correlations=True), True),
-        "oracle_corr": _m(pymatching.Matching.from_detector_error_model(dem_of(t1_c), enable_correlations=True), True),
     }
+    # PyMatching's correlated matching cannot be rebuilt with correct labels when the true DEM has
+    # parallel edges with different logical effects (S4 at d=3), so that baseline is omitted there.
+    if not parallel_edge_conflicts(true_dem):
+        decs["oracle_corr"] = _m(pymatching.Matching.from_detector_error_model(true_dem, enable_correlations=True), True)
     return decs, t1_c
 
 
