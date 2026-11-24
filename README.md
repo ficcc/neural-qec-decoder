@@ -16,6 +16,7 @@ The original hypothesis was that a decoder trained only on syndromes, which lear
 | Under per-qubit mismatch, naive matching is only about 10% worse than oracle matching, so there is little headroom. At d = 5 the GNN is statistically indistinguishable from oracle matching. | E2 |
 | The GNN needs about 100× more data than calibrated matching (10⁶ vs 10⁴ shots), and a Python/PyTorch decoder is 100–1000× above the ~1 µs/round hardware budget. | E4, E5 |
 | Adapting to drift with few new shots: **inconclusive**, because the drift was too weak to create a gap. | E7 |
+| Warm-starting the d = 7 GNN from d = 3,5 weights lowers its test error by ~15%, but it stays ~1.8× worse than matching. | E8 |
 
 So this is mostly a **negative result with one clean positive** (small-distance crosstalk). The d = 7 failure is a statement about *this GNN under this training budget*, not about neural decoders in general (see Limitations).
 
@@ -141,6 +142,24 @@ This is the GNN's best result. At d = 3 it is below every matching variant (per-
 | 10⁵ | 5.58e-03 | 5.45e-03 | 5.50e-03 | 5.62e-03 | 5.49e-03 |
 
 The drift (δ = 0.3) was too weak to matter: the stale decoders are already within 2% of oracle matching, so there was nothing for adaptation to recover. With 10³ new shots both methods get *worse* because they overfit. A stronger drift would be needed for a meaningful test.
+
+### E8: warm-starting the d = 7 GNN
+
+![E8](figures/e8_warmstart_curves.png)
+
+Because the GNN's weights do not depend on the code distance, a d = 7 model can start from one already trained on smaller codes. Four d = 7 runs, identical to the from-scratch runs (same grid, steps, learning rate and seeds) except for their initial weights: three start from models trained jointly on d = 3 and 5, one from d = 5 alone (12 000 steps each, about 16 minutes on one RTX 4090).
+
+Test-set per-round LER at d = 7 (S0; GNNs: mean ± std over 3 seeds, the d = 5 start is one seed):
+
+| p | naive MWPM | correlated MWPM | GNN from scratch | GNN warm (d = 3,5) | GNN warm (d = 5) |
+|---|---|---|---|---|---|
+| 0.002 | 2.33e-04 | 1.46e-04 | 5.49e-04 ± 3e-05 | 4.18e-04 ± 9e-06 | 4.35e-04 |
+| 0.003 | 1.08e-03 | 6.45e-04 | 2.50e-03 ± 4e-05 | 2.03e-03 ± 4e-05 | 1.94e-03 |
+| 0.004 | 3.28e-03 | 2.16e-03 | 6.70e-03 ± 1e-04 | 5.78e-03 ± 1e-04 | 5.57e-03 |
+| 0.005 | 7.35e-03 | 5.53e-03 | 1.46e-02 ± 2e-04 | 1.32e-02 ± 1e-04 | 1.29e-02 |
+| 0.006 | 1.38e-02 | 1.09e-02 | 2.56e-02 ± 1e-04 | 2.36e-02 ± 6e-05 | 2.33e-02 |
+
+Warm starting **helps consistently but not enough**: on average the test error is 15% lower than from scratch (24% at p = 0.002, 8% at p = 0.006), all three warm seeds beat all three scratch seeds, and the warm runs need 7 500–9 500 steps to reach the scratch runs' best validation score (about a quarter fewer). The warm-started GNN is still 1.8× worse than naive matching and 2.9× worse than correlated matching, so initialisation is not the main obstacle at d = 7. Together with the failed 8-layer ablation, this points at the model's limited view of a d = 7 code (four message-passing rounds over eight neighbours per detector), which is untested.
 
 ### E5: latency
 

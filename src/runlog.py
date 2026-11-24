@@ -16,7 +16,7 @@ import numpy as np
 from src.plots import base_name
 
 PACKAGES = ("stim", "pymatching", "sinter", "torch", "numpy", "matplotlib", "pytest")
-EXPERIMENTS = ("e1", "e2", "e3", "e4", "e6", "e7")
+EXPERIMENTS = ("e1", "e2", "e3", "e4", "e6", "e7", "e8", "e9")
 
 
 def _git(*args):

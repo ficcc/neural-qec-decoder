@@ -69,3 +69,11 @@ def test_record_run_writes_self_contained_folder(tmp_path):
     assert m["tests"] == {"passed": 5, "failed": 0} and "python" in m["environment"]
     assert json.loads((out / "summary.json").read_text())["metrics"]["e1/S0/d3/p0.002/naive"] == pytest.approx(0.003)
     assert (out / "results" / "e1.jsonl").exists()
+
+
+def test_summarise_includes_e8_and_e9(tmp_path):
+    _write(tmp_path / "e8.jsonl", [_row("gnn_warm35_s0", 7, 0.004, 0.006, scen="S0")])
+    _write(tmp_path / "e9.jsonl", [_row("pd_s0", 7, 0.004, 0.003, scen="S0")])
+    s = summarise_results(tmp_path)
+    assert s["e8/S0/d7/p0.004/gnn_warm35"] == pytest.approx(0.006)
+    assert s["e9/S0/d7/p0.004/pd"] == pytest.approx(0.003)
