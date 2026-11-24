@@ -2,7 +2,7 @@
 
 A graph neural network (GNN) decoder, benchmarked against minimum-weight perfect matching (MWPM, via PyMatching) on rotated surface-code memory experiments at distances d = 3, 5, 7, under circuit-level noise that the decoder was **not** told about.
 
-**Author:** Uhenraj Jarga Magar. A paper draft is in `docs/paper/` and a plain-language explanation in `docs/ELI5.md` with an interactive version in `docs/eli5/index.html` (open the file in a browser; no install needed). **Status:** complete benchmark (experiments E1–E9b); all numbers below are generated from `results/*.jsonl` by the code in this repo, and every run is recorded in `runs/`.
+**Author:** Uhenraj Jarga Magar. **Live pages:** [the full report](https://ficcc.github.io/neural-qec-decoder/) (interactive charts) and [the interactive plain-language explainer](https://ficcc.github.io/neural-qec-decoder/eli5/) (with optional sound). A paper draft is in `docs/paper/` and a text version of the explainer in `docs/ELI5.md`; the page sources are `docs/index.html` and `docs/eli5/index.html` (no install needed). **Status:** complete benchmark (experiments E1–E9b); all numbers below are generated from `results/*.jsonl` by the code in this repo, and every run is recorded in `runs/`.
 
 ## TL;DR
 
@@ -294,7 +294,8 @@ results/ runs/      raw results; recorded runs (v1 ... v5) with environment and 
 figures/            plots used in this README
 docs/paper/         paper draft (LaTeX + PDF; tables generated from results) and build notes
 docs/ELI5.md        the project explained in plain language
-docs/eli5/          interactive version (index.html, toy simulations in sim.js, real results in data.js)
+docs/index.html     the full report as a web page (charts read docs/eli5/data.js; figures in docs/assets/)
+docs/eli5/          interactive explainer (index.html, toy simulations sim.js, sound audio.js, real results data.js)
 docs/design/        design documents (with the E9/E9b pre-registration)
 ```
 

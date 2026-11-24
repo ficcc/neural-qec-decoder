@@ -88,11 +88,38 @@ tr.sel{background:var(--accent-soft)} tbody tr{cursor:pointer}
 footer{padding:32px 0 60px;color:var(--muted);font-size:14.5px}
 .sr{position:absolute;left:-9999px}
 noscript .card{background:var(--warn-soft);color:var(--warn)}
+.sound{position:fixed;top:12px;right:12px;z-index:20;font:600 14px var(--sans);border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.sound[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.sound .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--muted);margin-right:8px;vertical-align:baseline}
+.sound[aria-pressed="true"] .dot{background:var(--on-accent)}
+.sound.pulse .dot{transform:scale(1.7)}
+.sound .dot{transition:transform .12s}
+.stories{display:grid;gap:8px;margin:12px 0 0}
+.story{display:grid;grid-template-columns:96px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:15px}
+.story.pick{border-color:var(--ok);background:var(--ok-soft)}
+.story .dots{display:flex;gap:6px;flex-wrap:wrap}
+.story .dots i{width:20px;height:20px;border-radius:50%;border:2px solid var(--ink);display:inline-block;opacity:.55}
+.story .dots i.f{background:var(--warn);border-color:var(--warn);opacity:1}
+.story b.cost{font-variant-numeric:tabular-nums}
+.tour{border-left:4px solid var(--accent)}
+.tour .cap{font-size:18px;min-height:56px;margin:8px 0}
+.steps{display:flex;gap:6px;margin:6px 0 10px}
+.steps i{flex:1;height:6px;border-radius:3px;background:var(--grid)}
+.steps i.on{background:var(--accent)}
+.puzzle{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.puzzle .al{width:38px;height:38px;border-radius:9px;border:2px solid var(--line);display:grid;place-items:center;font-weight:700;background:var(--card)}
+.puzzle .al.ring{border-color:var(--bad);background:var(--bad-soft);color:var(--bad)}
+.puzzle .pt{width:46px;height:46px;border-radius:50%;border:2.5px solid var(--ink);background:var(--card);color:var(--ink);font:700 18px var(--sans);cursor:pointer}
+.puzzle .pt[aria-pressed="true"]{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.gone{opacity:0;transform:scale(.4);transition:opacity .4s,transform .4s}
+#demo-alarms g.pair{transform-box:fill-box;transform-origin:center}
+@media (max-width:640px){.sound{top:8px;right:8px;padding:6px 10px}.story{grid-template-columns:1fr auto}.story .dots{grid-column:1/-1;order:3}}
 </style>
 </head>
 <body>
+<button class="sound" id="b-sound" type="button" aria-pressed="false"><span class="dot"></span><span id="sound-lbl">Sound: off</span></button>
 <header class="hero"><div class="wrap">
-  <p class="eyebrow">Interactive explainer</p>
+  <p class="eyebrow">Interactive explainer · <a href="../" style="text-decoration:none">full report</a></p>
   <h1>How do you fix a computer that makes mistakes all day long?</h1>
   <p class="lead">Quantum computers are made of tiny, delicate parts that go wrong constantly. This page lets you play with the problem using smoke alarms, then shows what a real research project measured.</p>
   <nav class="toc" aria-label="Sections">
@@ -107,6 +134,12 @@ noscript .card{background:var(--warn-soft);color:var(--warn)}
 <section id="building" aria-labelledby="h-building">
   <h2 id="h-building">1. The alarm building</h2>
   <p>Picture a row of delicate parts (<b>qubits</b>). Any of them can suddenly flip, like a light switch jumping on its own. Between every pair of neighbours there is a <b>smoke alarm</b> that rings when the two neighbours <em>disagree</em>. Nobody is allowed to look at the parts themselves; only the alarms are visible.</p>
+  <div class="card tour">
+    <span class="tag toy">Guided story</span><span class="note">Press play and watch one mistake from start to finish. Turn sound on (top right) to hear it.</span>
+    <div class="steps" id="tour-steps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <p class="cap" id="tour-cap" role="status" aria-live="polite">Five parts in a row, no alarm ringing. Everything is fine.</p>
+    <div class="controls"><button class="act" id="b-tour" type="button">Play the story</button></div>
+  </div>
   <div class="card">
     <span class="tag toy">Toy model</span><span class="note">Click a part to make a mistake, then ask the detective.</span>
     <div class="controls">
@@ -122,7 +155,18 @@ noscript .card{background:var(--warn-soft);color:var(--warn)}
     <svg id="svg-building" viewBox="0 0 700 230" role="img" aria-label="A row of parts with alarms between them"></svg>
     <div class="controls"><button class="act" id="b-decode" type="button">Ask the detective to fix it</button></div>
     <div class="result info" id="decode-out" role="status" aria-live="polite">Click a part (or press Enter on it) to flip it. Watch which alarms ring.</div>
+    <h3>What the detective is weighing</h3>
+    <p class="note" style="margin:0">Only two stories can explain any set of alarms: one and its mirror image. The detective picks the one with fewer flipped parts (orange).</p>
+    <div class="stories" id="stories" aria-live="polite"></div>
     <p class="note" style="margin-top:10px">The detective looks only at the alarms and picks the <em>fewest-mistakes</em> story that explains them. That is the idea behind <b>matching</b>, the classic decoder. A row of <span id="n-now">5</span> parts can always be fixed if at most <span id="k-now">2</span> flipped.</p>
+  </div>
+  <h3>Can you beat the detective?</h3>
+  <div class="card">
+    <span class="tag toy">Game</span><span class="note">Only the alarms are shown. Tick the parts you think flipped, then check.</span>
+    <div class="puzzle" id="pz-alarms" aria-label="Alarms"></div>
+    <div class="puzzle" id="pz-parts" role="group" aria-label="Your guess"></div>
+    <div class="controls"><button class="act" id="pz-check" type="button">Check my answer</button><button class="act ghost" id="pz-new" type="button">New puzzle</button><span class="note" id="pz-score">Solved: 0 of 0</span></div>
+    <div class="result info" id="pz-out" role="status" aria-live="polite">Tip: your story must make exactly the same alarms ring.</div>
   </div>
   <h3>Is a bigger building safer?</h3>
   <div class="card">
@@ -176,10 +220,12 @@ noscript .card{background:var(--warn-soft);color:var(--warn)}
   <h2 id="h-helper">4. A better job for the student: the helper</h2>
   <p>Instead of replacing the detective, the student gets a smaller job: <b>tidy the obvious mess first</b>, then hand what is left to the classic detective. What counts as obvious? Two neighbouring alarms ring and <em>nobody else nearby</em> does: that is clearly one small mistake right between them.</p>
   <div class="card">
+    <span class="tag toy">Animation</span><span class="note">Green: obvious pairs the helper can clear. Orange: a tangle the classic detective must untangle.</span>
     <svg viewBox="0 0 700 150" role="img" aria-label="Alarms: two isolated pairs are obvious, a cluster is tricky">
       <g id="demo-alarms"></g>
     </svg>
-    <p class="note" style="margin:6px 0 0">Green: obvious pairs the helper can clear. Orange: a tangle the classic detective must untangle.</p>
+    <div class="controls"><button class="act" id="b-demo" type="button">Let the helper work</button><button class="act ghost" id="b-demo-reset" type="button">Reset</button></div>
+    <p class="result info" id="demo-msg" role="status" aria-live="polite">Press the button to watch the helper work.</p>
   </div>
   <p>There is one dial: <b>how sure must the helper be before it clears something?</b> Too eager and it makes wrong calls; too picky and it does little. Here is what we <em>actually measured</em> in the biggest building we tested (distance 7), using a helper that had only ever practised on smaller buildings.</p>
   <div class="card">
@@ -245,11 +291,12 @@ noscript .card{background:var(--warn-soft);color:var(--warn)}
 </main>
 
 <footer><div class="wrap">
-  Read more: <a href="../paper/paper.pdf">the paper draft (PDF)</a> · <a href="https://github.com/ficcc/neural-qec-decoder">the repository README</a> · <a href="../ELI5.md">text-only version</a>.
+  Read more: <a href="../">the full report</a> · <a href="../paper/paper.pdf">the paper draft (PDF)</a> · <a href="https://github.com/ficcc/neural-qec-decoder">the repository README</a> · <a href="../ELI5.md">text-only version</a>.
   The real measurements are loaded from <code>data.js</code>, generated from the project's stored results.
 </div></footer>
 
 <script src="sim.js"></script>
+<script src="audio.js"></script>
 <script src="data.js"></script>
 <script>
 (function(){
@@ -277,15 +324,22 @@ function renderBuilding(){
     if(fixes&&fixes[i]){s.appendChild(svg("g",{class:"fix",transform:`translate(${xs[i]},${y})`},[svg("circle",{r:30})]))}
   });
   $("n-now").textContent=n;$("k-now").textContent=(n-1)/2;
+  renderStories(syn);
 }
-function toggle(i){err[i]^=1;fixes=null;$("decode-out").className="result info";$("decode-out").textContent="The alarms changed. Ask the detective when you are ready.";renderBuilding()}
+function pulse(){const b=$("b-sound");b.classList.add("pulse");setTimeout(()=>b.classList.remove("pulse"),160)}
+function renderStories(syn,pick){
+  const host=$("stories");host.innerHTML="";const c=Sim.candidates(syn),cost=c.map(x=>x.reduce((a,b)=>a+b,0)),best=cost[1]<cost[0]?1:0;
+  c.forEach((st,k)=>{const r=document.createElement("div");r.className="story"+(k===best?" pick":"");const l=document.createElement("span");l.textContent="Story "+"AB"[k];const d=document.createElement("div");d.className="dots";st.forEach(v=>{const i=document.createElement("i");if(v)i.className="f";d.appendChild(i)});const t=document.createElement("b");t.className="cost";t.textContent=cost[k]+" flipped"+(k===best?" (cheaper)":"");r.append(l,d,t);host.appendChild(r)});
+}
+function ringSounds(before){Sim.syndrome(err).forEach((v,j)=>{if(v&&!before[j])Sound.alarm(j,0.1+0.12*j)});pulse()}
+function toggle(i){const before=Sim.syndrome(err);Sound.flip();err[i]^=1;fixes=null;$("decode-out").className="result info";$("decode-out").textContent="The alarms changed. Ask the detective when you are ready.";renderBuilding();ringSounds(before)}
 function setSize(m){n=m;err=new Array(n).fill(0);fixes=null;$("decode-out").className="result info";$("decode-out").textContent="New row. Click a part to flip it.";renderBuilding()}
 function decodeNow(){
   const o=$("decode-out"); if(!err.some(Boolean)){o.className="result info";o.textContent="Nothing is flipped, so no alarm rings and the detective has nothing to do.";return}
   const corr=Sim.decode(Sim.syndrome(err),Sim.weights(new Array(n).fill(0.1))); fixes=corr; renderBuilding();
   const count=corr.reduce((a,b)=>a+b,0), real=err.reduce((a,b)=>a+b,0);
-  if(!Sim.logicalError(err,corr)){o.className="result ok";o.textContent=`Fixed. The detective flipped back ${count} part${count===1?"":"s"} (green dashes) and undid every mistake.`}
-  else{o.className="result bad";o.textContent=`Oops. ${real} parts really flipped, which is more than half the row. The detective's fewest-mistakes story ("only ${count} flipped") was wrong, so the whole row ended up flipped: a logical error. Try fewer mistakes, or a bigger row.`}
+  if(!Sim.logicalError(err,corr)){Sound.ok();o.className="result ok";o.textContent=`Fixed. The detective flipped back ${count} part${count===1?"":"s"} (green dashes) and undid every mistake.`}
+  else{Sound.bad();o.className="result bad";o.textContent=`Oops. ${real} parts really flipped, which is more than half the row. The detective's fewest-mistakes story ("only ${count} flipped") was wrong, so the whole row ended up flipped: a logical error. Try fewer mistakes, or a bigger row.`}
 }
 function randomMistakes(){const p=+$("p-chance").value/100;const r=Sim.mulberry32((Math.random()*1e9)|0);err=Sim.sample(new Array(n).fill(p),r);fixes=null;$("decode-out").className="result info";$("decode-out").textContent=`${err.reduce((a,b)=>a+b,0)} part(s) flipped at random. Ask the detective.`;renderBuilding()}
 seg($("size-seg"),sizes.map(v=>[v,String(v)]),5,setSize);
@@ -300,6 +354,50 @@ function runMC(){
   host.appendChild(Object.assign(document.createElement("div"),{className:"note",textContent:"Bars are drawn at twice their value so small numbers stay visible."}));
 }
 $("mc-p").oninput=()=>{$("mc-p-out").textContent=$("mc-p").value+"%"};$("b-mc").onclick=runMC;runMC();
+
+/* ---------- sound switch ---------- */
+$("b-sound").onclick=()=>{const on=!Sound.isOn();Sound.set(on);$("b-sound").setAttribute("aria-pressed",String(on));$("sound-lbl").textContent=on?"Sound: on":"Sound: off"};
+
+/* ---------- guided story ---------- */
+(function(){
+  const cap=$("tour-cap"),steps=[...$("tour-steps").children],sl=(ms)=>new Promise(r=>setTimeout(r,ms));let busy=false;
+  const mark=(k)=>steps.forEach((x,i)=>x.classList.toggle("on",i<=k));
+  $("b-tour").onclick=async()=>{
+    if(busy)return;busy=true;$("b-tour").textContent="Playing...";
+    setSize(5);[...$("size-seg").children].forEach((c,i)=>c.setAttribute("aria-pressed",String(sizes[i]===5)));
+    mark(0);cap.textContent="Five parts in a row, no alarm ringing. Everything is fine.";await sl(1300);
+    mark(1);cap.textContent="Uh-oh: the middle part flips all by itself. Nobody sees it happen.";let before=Sim.syndrome(err);Sound.flip();err[2]=1;renderBuilding();await sl(1700);
+    mark(2);cap.textContent="Its two neighbours now disagree with it, so two alarms ring. That is all anybody can see.";ringSounds(before);await sl(2600);
+    mark(3);cap.textContent="The detective writes down the only two stories that fit: one flipped part, or four. It picks the shorter one (see the orange story below).";await sl(2800);
+    mark(4);decodeNow();cap.textContent="Fixed: it flipped the middle part back. Now try it yourself below: click parts, or play the game.";
+    $("b-tour").textContent="Play again";busy=false};
+})();
+
+/* ---------- can you beat the detective? ---------- */
+(function(){
+  const N=7,w=Sim.weights(new Array(N).fill(0.1));let truth,guess,checked,solved=0,tried=0;
+  const al=$("pz-alarms"),pt=$("pz-parts"),out=$("pz-out");
+  function show(cls,t){out.className="result "+cls;out.textContent=t}
+  function render(){
+    al.innerHTML="";const syn=Sim.syndrome(truth);syn.forEach((v,j)=>{const d=document.createElement("div");d.className="al"+(v?" ring":"");d.textContent=v?"!":"·";d.title="alarm "+(j+1);al.appendChild(d)});
+    pt.innerHTML="";guess.forEach((v,i)=>{const b=document.createElement("button");b.type="button";b.className="pt";b.textContent=String(i+1);b.setAttribute("aria-pressed",String(!!v));b.setAttribute("aria-label",`Part ${i+1}: ${v?"you say it flipped":"you say it is fine"}`);b.onclick=()=>{guess[i]^=1;Sound.tick();render()};pt.appendChild(b)});
+    $("pz-score").textContent=`Solved: ${solved} of ${tried}`;
+  }
+  function fresh(){do{truth=Sim.sample(new Array(N).fill(0.2),Sim.mulberry32((Math.random()*1e9)|0))}while(!truth.some(Boolean)||truth.reduce((a,b)=>a+b,0)>3);guess=new Array(N).fill(0);checked=false;show("info","Tip: your story must make exactly the same alarms ring.");render()}
+  $("pz-new").onclick=fresh;
+  $("pz-check").onclick=()=>{
+    const syn=Sim.syndrome(truth),g=Sim.syndrome(guess),sum=(a)=>a.reduce((x,y)=>x+y,0),count=sum(guess),best=Math.min(...Sim.candidates(syn).map(sum));
+    const bad=g.map((v,j)=>v!==syn[j]?j+1:0).filter(Boolean);
+    const real=truth.map((v,i)=>v?i+1:0).filter(Boolean), det=Sim.decode(syn,w), right=!Sim.logicalError(truth,det);
+    const tail=` What really happened: part${real.length>1?"s":""} ${real.join(", ")} flipped. The detective's pick was ${right?"right":"wrong this time (the real story was not the shortest one)"}.`;
+    if(!checked){tried++;checked=true}
+    if(bad.length){Sound.bad();show("bad",`Not yet: your story rings the wrong alarms (alarm${bad.length>1?"s":""} ${bad.join(", ")} would differ).`+" Try again.")}
+    else if(count===best){solved++;Sound.ok();show("ok",`Yes! Your story explains every alarm with the fewest flipped parts (${count}), the same choice the detective makes.`+tail)}
+    else{Sound.bad();show("bad",`Your story explains the alarms, but uses ${count} flipped parts when ${best} would do. The detective prefers the shorter one.`+tail)}
+    render();
+  };
+  fresh();
+})();
 
 /* ---------- 2. the wrong map ---------- */
 const PRESETS={even:["Everyone equally shaky",()=>new Array(7).fill(0.10)],ends:["Shaky ends",()=>[0.30,0.04,0.04,0.04,0.04,0.04,0.30]],wild:["Very uneven",()=>[0.45,0.30,0.02,0.02,0.02,0.30,0.45]],one:["One bad part",()=>[0.05,0.05,0.05,0.25,0.05,0.05,0.05]],rand:["Random",null]};
@@ -351,10 +449,16 @@ setTimeout(computePractice,30);
 
 /* ---------- 4. the helper ---------- */
 (function demo(){const g=$("demo-alarms"),pos=[[70,60],[130,60],[260,90],[320,90],[470,40],[520,70],[560,40],[500,110],[555,105],[610,80],[90,115],[200,120]];
-  const kind=["ok","ok","ok","ok","tang","tang","tang","tang","tang","tang","none","none"];
-  const col={ok:["var(--ok-soft)","var(--ok)"],tang:["var(--warn-soft)","var(--warn)"]};
-  [[0,1],[2,3]].forEach(([a,b])=>g.appendChild(svg("line",{x1:pos[a][0],y1:pos[a][1],x2:pos[b][0],y2:pos[b][1],stroke:"var(--ok)","stroke-width":4})));
-  pos.forEach((p,i)=>{if(kind[i]==="none")return;g.appendChild(svg("rect",{x:p[0]-14,y:p[1]-14,width:28,height:28,rx:7,fill:col[kind[i]][0],stroke:col[kind[i]][1],"stroke-width":2.5}));g.appendChild(svg("text",{x:p[0],y:p[1]+5,"text-anchor":"middle",style:"font-weight:700;fill:"+col[kind[i]][1]},["!"]))});
+  const col={ok:["var(--ok-soft)","var(--ok)"],tang:["var(--warn-soft)","var(--warn)"]},pairs=[[0,1],[2,3]],tang=[4,5,6,7,8,9];
+  function draw(){g.innerHTML="";
+    pairs.forEach(([a,b],k)=>{const pg=svg("g",{class:"pair",id:"pair"+k});pg.appendChild(svg("line",{x1:pos[a][0],y1:pos[a][1],x2:pos[b][0],y2:pos[b][1],stroke:"var(--ok)","stroke-width":4}));[a,b].forEach(i=>{pg.appendChild(svg("rect",{x:pos[i][0]-14,y:pos[i][1]-14,width:28,height:28,rx:7,fill:col.ok[0],stroke:col.ok[1],"stroke-width":2.5}));pg.appendChild(svg("text",{x:pos[i][0],y:pos[i][1]+5,"text-anchor":"middle",style:"font-weight:700;fill:var(--ok)"},["!"]))});g.appendChild(pg)});
+    const tg=svg("g",{id:"tangle"});tang.forEach(i=>{tg.appendChild(svg("rect",{x:pos[i][0]-14,y:pos[i][1]-14,width:28,height:28,rx:7,fill:col.tang[0],stroke:col.tang[1],"stroke-width":2.5}));tg.appendChild(svg("text",{x:pos[i][0],y:pos[i][1]+5,"text-anchor":"middle",style:"font-weight:700;fill:var(--warn)"},["!"]))});g.appendChild(tg)}
+  draw();let busy=false;const msg=$("demo-msg"),sl=(ms)=>new Promise(r=>setTimeout(r,ms));
+  $("b-demo").onclick=async()=>{if(busy)return;busy=true;msg.textContent="The helper looks at each ringing alarm. Is it part of a lonely pair?";await sl(600);
+    for(let k=0;k<pairs.length;k++){document.getElementById("pair"+k).classList.add("gone");Sound.pop(k);pulse();await sl(550)}
+    msg.textContent="Two obvious pairs cleared. The tangle is left for the classic detective.";await sl(700);
+    document.getElementById("tangle").setAttribute("opacity","1");Sound.ok();msg.textContent="Result: the classic detective now has 6 alarms to untangle instead of 10. That is the whole trick.";busy=false};
+  $("b-demo-reset").onclick=()=>{if(busy)return;draw();msg.textContent="Press the button to watch the helper work."};
 })();
 const E9=window.RESULTS.e9; const hp=$("h-p"); E9.p.forEach(v=>hp.add(new Option(String(v),String(v)))); hp.value="0.002";
 function sureLabel(t){return t>=0.99?(t*100).toFixed(t===0.999?1:1)+"%":Math.round(t*100)+"%"}
